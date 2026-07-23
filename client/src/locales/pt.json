@@ -1269,7 +1269,8 @@
           "comicvine": "Metadados de quadrinhos do ComicVine. Uma chave de API gratuita é necessária em comicvine.gamespot.com.",
           "ranobedb": "Metadados de light novels japonesas do RanobeDB. Nenhuma configuração é necessária.",
           "lubimyczytac": "Catálogo de livros polonês (lubimyczytac.pl). Coleta páginas públicas de livros. Nenhuma configuração é necessária.",
-          "aladin": "Metadados de livros coreanos do Aladin (알라딘). Uma Chave TTB de aladin.co.kr é necessária."
+          "aladin": "Metadados de livros coreanos do Aladin (알라딘). Uma Chave TTB de aladin.co.kr é necessária.",
+          "mangabaka": "Metadados de mangá e light novels do MangaBaka. Nenhuma configuração é necessária."
         },
         "blocked": {
           "google": "O Google Books requer uma chave de API antes de poder ser ativado",

@@ -237,6 +237,7 @@ const rows = computed<RowDef[]>(() => [
       blockedMessage: t('settings.metadata.providers.blocked.aladin'),
     },
   },
+  { key: 'mangabaka', label: 'MangaBaka', hint: t('settings.metadata.providers.hints.mangabaka'), fields: [] },
 ])
 
 const TESTABLE_PROVIDERS: MetadataProviderKey[] = [MetadataProviderKey.AMAZON, MetadataProviderKey.HARDCOVER, MetadataProviderKey.ALADIN]

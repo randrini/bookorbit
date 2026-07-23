@@ -176,6 +176,15 @@ const providerLinks = computed<ProviderLink[]>(() => {
       fallback: '알',
     })
   }
+  if (ids.mangabaka) {
+    out.push({
+      key: 'mangabaka',
+      label: 'MangaBaka',
+      url: `https://mangabaka.org/${ids.mangabaka}`,
+      iconUrl: providerIconPath('mangabaka'),
+      fallback: 'MB',
+    })
+  }
   return out
 })
 

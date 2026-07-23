@@ -1269,7 +1269,8 @@
           "comicvine": "Comic-Metadaten von ComicVine. Ein kostenloser API-Schlüssel von comicvine.gamespot.com ist erforderlich.",
           "ranobedb": "Metadaten japanischer Light Novels von RanobeDB. Keine Einrichtung erforderlich.",
           "lubimyczytac": "Polnischer Buchkatalog (lubimyczytac.pl). Ruft Daten von öffentlichen Buchseiten ab. Keine Einrichtung erforderlich.",
-          "aladin": "Koreanische Buch-Metadaten von Aladin (알라딘). Ein TTB-Schlüssel von aladin.co.kr ist erforderlich."
+          "aladin": "Koreanische Buch-Metadaten von Aladin (알라딘). Ein TTB-Schlüssel von aladin.co.kr ist erforderlich.",
+          "mangabaka": "Manga- und Light-Novel-Metadaten von MangaBaka. Keine Einrichtung erforderlich."
         },
         "blocked": {
           "google": "Google Books erfordert einen API-Schlüssel, bevor es aktiviert werden kann",

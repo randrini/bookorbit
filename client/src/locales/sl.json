@@ -1269,7 +1269,8 @@
           "comicvine": "Metapodatki stripov iz ComicVine. Potreben je brezplačen API ključ s comicvine.gamespot.com.",
           "ranobedb": "Metapodatki japonskih lahkih romanov iz RanobeDB. Nastavitev ni potrebna.",
           "lubimyczytac": "Poljski katalog knjig (lubimyczytac.pl). Pridobiva podatke z javnih strani knjig. Nastavitev ni potrebna.",
-          "aladin": "Korejski metapodatki knjig iz Aladin (알라딘). Potreben je TTB ključ z aladin.co.kr."
+          "aladin": "Korejski metapodatki knjig iz Aladin (알라딘). Potreben je TTB ključ z aladin.co.kr.",
+          "mangabaka": "Metapodatki mang in lahkih romanov iz MangaBaka. Nastavitev ni potrebna."
         },
         "blocked": {
           "google": "Google Books zahteva API ključ, preden ga je mogoče omogočiti",
