@@ -58,7 +58,8 @@ export class MangabakaClient {
   }
 
   async fetchWorks(collectionId: string, signal?: AbortSignal): Promise<MangabakaWork[]> {
-    const limit = 100;
+    // The API rejects limit values above 50 with a 400, so cap at 50.
+    const limit = 50;
     const firstEnvelope = await this.get<MangabakaEnvelope<MangabakaWork[]> & { pagination: MangabakaPagination }>(
       'fetchWorks',
       `/v1/collections/${collectionId}/works?limit=${limit}&page=1`,

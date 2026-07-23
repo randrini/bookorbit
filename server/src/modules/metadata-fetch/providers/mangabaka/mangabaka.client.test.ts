@@ -336,34 +336,34 @@ describe('MangabakaClient', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ status: 200, data: [], pagination: { count: 0, page: 1, limit: 100, next: null, previous: null } }),
+        json: () => Promise.resolve({ status: 200, data: [], pagination: { count: 0, page: 1, limit: 50, next: null, previous: null } }),
       } as Response);
 
       await client.fetchWorks('col-1');
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/v1/collections/col-1/works?limit=100&page=1'), expect.any(Object));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/v1/collections/col-1/works?limit=50&page=1'), expect.any(Object));
     });
 
     it('fetches all pages when pagination count exceeds limit', async () => {
-      const page1Works = Array.from({ length: 100 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i }));
-      const page2Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${100 + i}`, series_id: 1, sequence_numeric: 100 + i }));
+      const page1Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i }));
+      const page2Works = Array.from({ length: 25 }, (_, i) => ({ id: `work-${50 + i}`, series_id: 1, sequence_numeric: 50 + i }));
 
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
           json: () =>
-            Promise.resolve({ status: 200, data: page1Works, pagination: { count: 150, page: 1, limit: 100, next: 'page=2', previous: null } }),
+            Promise.resolve({ status: 200, data: page1Works, pagination: { count: 75, page: 1, limit: 50, next: 'page=2', previous: null } }),
         } as Response)
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
           json: () =>
-            Promise.resolve({ status: 200, data: page2Works, pagination: { count: 150, page: 2, limit: 100, next: null, previous: 'page=1' } }),
+            Promise.resolve({ status: 200, data: page2Works, pagination: { count: 75, page: 2, limit: 50, next: null, previous: 'page=1' } }),
         } as Response);
 
       const result = await client.fetchWorks('col-1');
-      expect(result).toHaveLength(150);
+      expect(result).toHaveLength(75);
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
