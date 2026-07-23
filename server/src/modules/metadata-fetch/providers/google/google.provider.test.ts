@@ -20,8 +20,11 @@ describe('GoogleProvider', () => {
     comicvine: { enabled: false, apiKey: '' },
     ranobedb: { enabled: false },
     kobo: { enabled: false, country: 'us', language: 'en' },
-    lubimyczytac: { enabled: false },
-  };
+  lubimyczytac: { enabled: false },
+  mangabaka: { enabled: false },
+  librofm: { enabled: false },
+  aladin: { enabled: false, ttbKey: '' },
+};
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

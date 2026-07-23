@@ -1,0 +1,305 @@
+import { MetadataProviderKey } from '@bookorbit/types';
+import { describe, expect, it } from 'vitest';
+
+import { mapMangabakaSeries } from './mangabaka.mapper';
+import { MangabakaSeries } from './mangabaka.types';
+
+const baseSeries: MangabakaSeries = {
+  id: 1,
+  state: 'active',
+  merged_with: null,
+  title: 'DICE',
+  native_title: '다이스',
+  romanized_title: 'DICE',
+  secondary_titles: null,
+  cover: {
+    raw: {
+      url: 'https://images.mangabaka.dev/test',
+      size: 100000,
+      height: 800,
+      width: 600,
+      blurhash: 'test',
+      thumbhash: 'test',
+      format: 'jpeg',
+    },
+    x150: { x1: 'https://cdn.mangabaka.dev/x150/1', x2: 'https://cdn.mangabaka.dev/x150/2', x3: 'https://cdn.mangabaka.dev/x150/3' },
+    x250: { x1: 'https://cdn.mangabaka.dev/x250/1', x2: 'https://cdn.mangabaka.dev/x250/2', x3: 'https://cdn.mangabaka.dev/x250/3' },
+    x350: { x1: 'https://cdn.mangabaka.dev/x350/1', x2: 'https://cdn.mangabaka.dev/x350/2', x3: 'https://cdn.mangabaka.dev/x350/3' },
+  },
+  authors: ['Hyun-Seok Yun'],
+  artists: ['Hyun-Seok Yun'],
+  description: 'A manga about dice.',
+  year: 2013,
+  published: {
+    start_date: '2013-05-18',
+    end_date: '2021-07-17',
+    start_date_is_estimated: false,
+    end_date_is_estimated: false,
+  },
+  status: 'completed',
+  is_licensed: true,
+  has_anime: true,
+  anime: null,
+  content_rating: 'safe',
+  type: 'manhwa',
+  rating: 70.3,
+  popularity: {
+    global: { current: 794, history: {} },
+    type: { current: 234, history: {} },
+  },
+  final_volume: null,
+  total_chapters: '388',
+  links: [],
+  links_v2: [
+    {
+      id: 'test-id',
+      url: 'https://mangabaka.org/1',
+      name: 'mangabaka.org',
+      name_display: 'MangaBaka',
+      type: 'info',
+      language: null,
+    },
+  ],
+  publishers: [
+    { name: 'LINE Webtoon', type: 'English', note: '' },
+    { name: 'Naver', type: 'Original', note: '' },
+  ],
+  titles: [
+    { language: 'ko', traits: ['native'], title: '다이스', note: null, is_primary: true },
+    { language: 'en', traits: ['official'], title: 'DICE', note: null, is_primary: true },
+  ],
+  genres_v2: null,
+  genres: ['action', 'drama', 'psychological'],
+  tags_v2: [],
+  tags: [],
+  last_updated_at: '2026-01-01T00:00:00Z',
+  relationships: null,
+  relationships_v2: [],
+  source: {
+    anilist: { id: 85208, rating: 6.6, rating_normalized: 66 },
+    anime_planet: { id: 'dice-the-cube-that-changes-everything', rating: 3.7, rating_normalized: 74 },
+    anime_news_network: { id: null, rating: null, rating_normalized: null },
+    kitsu: { id: 35879, rating: 7.21, rating_normalized: 72 },
+    manga_updates: { id: 'rlpe3ta', rating: 7.53, rating_normalized: 75 },
+    my_anime_list: { id: 147443, rating: 6.72, rating_normalized: 67 },
+    shikimori: { id: 147443, rating: 6.72, rating_normalized: 67 },
+  },
+};
+
+describe('mapMangabakaSeries', () => {
+  it('maps a complete series correctly', () => {
+    const result = mapMangabakaSeries(baseSeries);
+
+    expect(result).toMatchObject({
+      provider: MetadataProviderKey.MANGABAKA,
+      providerId: '1',
+      title: 'DICE',
+      authors: ['Hyun-Seok Yun'],
+      publisher: 'LINE Webtoon',
+      publishedYear: 2013,
+      publishedDate: '2013-05-18',
+      genres: ['action', 'drama', 'psychological'],
+      communityRating: 3.51,
+      coverUrl: 'https://cdn.mangabaka.dev/x250/1',
+      sourceUrl: 'https://mangabaka.org/1',
+      description: 'A manga about dice.',
+    });
+  });
+
+  it('returns null when series has no id', () => {
+    const series = { ...baseSeries, id: 0 };
+    expect(mapMangabakaSeries(series)).toBeNull();
+  });
+
+  it('prefers romanized_title over native_title as subtitle when different from main title', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'One Piece',
+      native_title: 'ワンピース',
+      romanized_title: null,
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.subtitle).toBe('ワンピース');
+  });
+
+  it('omits subtitle when native_title equals main title', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'DICE',
+      native_title: 'DICE',
+      romanized_title: null,
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.subtitle).toBeUndefined();
+  });
+
+  it('uses primary English title when available', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'DICE',
+      titles: [
+        { language: 'ko', traits: ['native'], title: '다이스', note: null, is_primary: true },
+        { language: 'en', traits: ['official'], title: 'DICE: The Cube that Changes Everything', note: null, is_primary: true },
+      ],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.title).toBe('DICE: The Cube that Changes Everything');
+  });
+
+  it('falls back to romanized_title when no English title', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'ソードアート・オンライン',
+      romanized_title: 'Sword Art Online',
+      titles: [{ language: 'ja', traits: ['native'], title: 'ソードアート・オンライン', note: null, is_primary: true }],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.title).toBe('Sword Art Online');
+  });
+
+  it('falls back to title when no English or romanized title', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'ソードアート・オンライン',
+      romanized_title: null,
+      titles: [],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.title).toBe('ソードアート・オンライン');
+  });
+
+  it('extracts year from year field', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.publishedYear).toBe(2013);
+  });
+
+  it('extracts year from published.start_date when year is null', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      year: null,
+      published: { start_date: '2020-06-15', end_date: null, start_date_is_estimated: false, end_date_is_estimated: false },
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.publishedYear).toBe(2020);
+  });
+
+  it('returns undefined publishedYear when no year and no start_date', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      year: null,
+      published: null,
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.publishedYear).toBeUndefined();
+  });
+
+  it('uses English publisher over Original publisher', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.publisher).toBe('LINE Webtoon');
+  });
+
+  it('falls back to Original publisher when no English publisher', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      publishers: [{ name: 'Naver', type: 'Original', note: '' }],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.publisher).toBe('Naver');
+  });
+
+  it('returns undefined publisher when no publishers', () => {
+    const series: MangabakaSeries = { ...baseSeries, publishers: [] };
+    const result = mapMangabakaSeries(series);
+    expect(result?.publisher).toBeUndefined();
+  });
+
+  it('limits genres to 10', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      genres: ['g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'g9', 'g10', 'g11'],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.genres?.length).toBe(10);
+  });
+
+  it('returns undefined genres when empty array', () => {
+    const series: MangabakaSeries = { ...baseSeries, genres: [] };
+    const result = mapMangabakaSeries(series);
+    expect(result?.genres).toBeUndefined();
+  });
+
+  it('normalizes rating from 0-100 scale to 0-5 scale', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.communityRating).toBeCloseTo(3.515, 1);
+  });
+
+  it('returns undefined communityRating when rating is null', () => {
+    const series: MangabakaSeries = { ...baseSeries, rating: null };
+    const result = mapMangabakaSeries(series);
+    expect(result?.communityRating).toBeUndefined();
+  });
+
+  it('returns undefined communityRating when rating is not finite', () => {
+    const series: MangabakaSeries = { ...baseSeries, rating: NaN };
+    const result = mapMangabakaSeries(series);
+    expect(result?.communityRating).toBeUndefined();
+  });
+
+  it('returns undefined coverUrl when cover is null', () => {
+    const series: MangabakaSeries = { ...baseSeries, cover: null };
+    const result = mapMangabakaSeries(series);
+    expect(result?.coverUrl).toBeUndefined();
+  });
+
+  it('falls back to raw cover URL when x250 is null', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      cover: { ...baseSeries.cover!, x250: null },
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.coverUrl).toBe('https://images.mangabaka.dev/test');
+  });
+
+  it('returns undefined description when description is null', () => {
+    const series: MangabakaSeries = { ...baseSeries, description: null };
+    const result = mapMangabakaSeries(series);
+    expect(result?.description).toBeUndefined();
+  });
+
+  it('returns undefined description when description is empty string', () => {
+    const series: MangabakaSeries = { ...baseSeries, description: '   ' };
+    const result = mapMangabakaSeries(series);
+    expect(result?.description).toBeUndefined();
+  });
+
+  it('returns undefined authors when authors is empty', () => {
+    const series: MangabakaSeries = { ...baseSeries, authors: [] };
+    const result = mapMangabakaSeries(series);
+    expect(result?.authors).toBeUndefined();
+  });
+
+  it('constructs sourceUrl from links_v2 mangabaka link', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.sourceUrl).toBe('https://mangabaka.org/1');
+  });
+
+  it('falls back to constructed sourceUrl when no mangabaka link in links_v2', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      links_v2: [],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.sourceUrl).toBe('https://mangabaka.org/1');
+  });
+
+  it('returns publishedDate from published.start_date', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.publishedDate).toBe('2013-05-18');
+  });
+
+  it('returns undefined publishedDate when published is null', () => {
+    const series: MangabakaSeries = { ...baseSeries, published: null };
+    const result = mapMangabakaSeries(series);
+    expect(result?.publishedDate).toBeUndefined();
+  });
+});

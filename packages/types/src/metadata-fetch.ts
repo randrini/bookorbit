@@ -15,6 +15,7 @@ export const MetadataProviderKey = {
   KOBO: "kobo",
   LUBIMYCZYTAC: "lubimyczytac",
   ALADIN: "aladin",
+  MANGABAKA: "mangabaka",
 } as const;
 
 export const COMMUNITY_RATING_PROVIDER_KEYS = [
@@ -26,6 +27,7 @@ export const COMMUNITY_RATING_PROVIDER_KEYS = [
   MetadataProviderKey.RANOBEDB,
   MetadataProviderKey.AMAZON,
   MetadataProviderKey.AUDIBLE,
+  MetadataProviderKey.MANGABAKA,
 ] as const;
 
 export type CommunityRatingProviderKey = (typeof COMMUNITY_RATING_PROVIDER_KEYS)[number];

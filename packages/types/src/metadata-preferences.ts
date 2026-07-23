@@ -122,6 +122,10 @@ export interface AladinProviderConfig {
   ttbKey: string;
 }
 
+export interface MangabakaProviderConfig {
+  enabled: boolean;
+}
+
 export interface ProviderConfigurations {
   google: GoogleProviderConfig;
   amazon: AmazonProviderConfig;
@@ -137,6 +141,7 @@ export interface ProviderConfigurations {
   kobo: KoboProviderConfig;
   lubimyczytac: SimpleProviderConfig;
   aladin: AladinProviderConfig;
+  mangabaka: MangabakaProviderConfig;
 }
 
 export interface ProviderStatus {
