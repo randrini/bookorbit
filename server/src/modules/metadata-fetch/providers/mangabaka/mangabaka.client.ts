@@ -4,7 +4,7 @@ import { fetchWithThrottle } from '../../fetch-with-throttle';
 import { ProviderThrottleError } from '../../provider-throttle.error';
 import { PROVIDER_DELAYS_MS, PROVIDER_TIMEOUT_MS } from '../provider-constants';
 import { buildRequestSignal, sanitizeLogError, sleep } from '../provider-utils';
-import { MangabakaSearchResponse, MangabakaSeries } from './mangabaka.types';
+import { MangabakaEnvelope, MangabakaSearchResponse, MangabakaSeries } from './mangabaka.types';
 
 const BASE_URL = 'https://api.mangabaka.org';
 const USER_AGENT = 'bookorbit/1.0 (+https://github.com/bookorbit/bookorbit)';
@@ -39,7 +39,9 @@ export class MangabakaClient {
   }
 
   async fetchSeries(id: number, signal?: AbortSignal): Promise<MangabakaSeries | null> {
-    return this.get<MangabakaSeries>('fetchSeries', `/v1/series/${id}`, signal);
+    const envelope = await this.get<MangabakaEnvelope<MangabakaSeries>>('fetchSeries', `/v1/series/${id}`, signal);
+    if (!envelope?.data) return null;
+    return envelope.data;
   }
 
   private async get<T>(op: string, path: string, signal?: AbortSignal): Promise<T | null> {

@@ -155,7 +155,7 @@ describe('MangabakaClient', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve(mockSeries),
+        json: () => Promise.resolve({ status: 200, data: mockSeries }),
       } as Response);
 
       const result = await client.fetchSeries(1);
@@ -166,7 +166,7 @@ describe('MangabakaClient', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ id: 42 }),
+        json: () => Promise.resolve({ status: 200, data: { id: 42 } }),
       } as Response);
 
       await client.fetchSeries(42);

@@ -1,7 +1,10 @@
-export interface MangabakaSearchResponse {
+export interface MangabakaEnvelope<T> {
   status: number;
+  data: T;
+}
+
+export interface MangabakaSearchResponse extends MangabakaEnvelope<MangabakaSeries[]> {
   pagination: MangabakaPagination;
-  data: MangabakaSeries[];
 }
 
 export interface MangabakaPagination {
