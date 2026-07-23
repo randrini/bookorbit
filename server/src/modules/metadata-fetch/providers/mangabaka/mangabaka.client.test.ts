@@ -261,4 +261,183 @@ describe('MangabakaClient', () => {
       await expect(client.fetchSeries(1)).rejects.toThrow(ProviderThrottleError);
     });
   });
+
+  describe('fetchCollections()', () => {
+    it('returns array of collections on success', async () => {
+      const mockCollections = [
+        { id: 'col-1', series_id: 1, title: 'Naruto Vol. 1', type: 'volume' },
+        { id: 'col-2', series_id: 1, title: 'Naruto Vol. 2', type: 'volume' },
+      ];
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: mockCollections }),
+      } as Response);
+
+      const result = await client.fetchCollections(1);
+      expect(result).toEqual(mockCollections);
+    });
+
+    it('calls correct URL', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: [] }),
+      } as Response);
+
+      await client.fetchCollections(42);
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/v1/series/42/collections'), expect.any(Object));
+    });
+
+    it('returns empty array when response is not ok', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+      } as Response);
+
+      const result = await client.fetchCollections(999);
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when fetch throws a generic error', async () => {
+      mockFetch.mockRejectedValue(new Error('timeout'));
+
+      const result = await client.fetchCollections(1);
+      expect(result).toEqual([]);
+    });
+
+    it('rethrows ProviderThrottleError', async () => {
+      mockFetch.mockRejectedValue(new ProviderThrottleError(1000));
+
+      await expect(client.fetchCollections(1)).rejects.toThrow(ProviderThrottleError);
+    });
+  });
+
+  describe('fetchWorks()', () => {
+    it('returns array of works on success', async () => {
+      const mockWorks = [
+        { id: 'work-1', series_id: 1, sequence_numeric: 1 },
+        { id: 'work-2', series_id: 1, sequence_numeric: 2 },
+      ];
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: mockWorks, pagination: { count: 2, page: 1, limit: 100, next: null, previous: null } }),
+      } as Response);
+
+      const result = await client.fetchWorks('col-1');
+      expect(result).toEqual(mockWorks);
+    });
+
+    it('calls correct URL with limit and page', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: [], pagination: { count: 0, page: 1, limit: 100, next: null, previous: null } }),
+      } as Response);
+
+      await client.fetchWorks('col-1');
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/v1/collections/col-1/works?limit=100&page=1'), expect.any(Object));
+    });
+
+    it('fetches all pages when pagination count exceeds limit', async () => {
+      const page1Works = Array.from({ length: 100 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i }));
+      const page2Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${100 + i}`, series_id: 1, sequence_numeric: 100 + i }));
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ status: 200, data: page1Works, pagination: { count: 150, page: 1, limit: 100, next: 'page=2', previous: null } }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ status: 200, data: page2Works, pagination: { count: 150, page: 2, limit: 100, next: null, previous: 'page=1' } }),
+        } as Response);
+
+      const result = await client.fetchWorks('col-1');
+      expect(result).toHaveLength(150);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns empty array when response is not ok', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+      } as Response);
+
+      const result = await client.fetchWorks('col-1');
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when fetch throws a generic error', async () => {
+      mockFetch.mockRejectedValue(new Error('timeout'));
+
+      const result = await client.fetchWorks('col-1');
+      expect(result).toEqual([]);
+    });
+
+    it('rethrows ProviderThrottleError', async () => {
+      mockFetch.mockRejectedValue(new ProviderThrottleError(1000));
+
+      await expect(client.fetchWorks('col-1')).rejects.toThrow(ProviderThrottleError);
+    });
+  });
+
+  describe('fetchWork()', () => {
+    it('returns work on success', async () => {
+      const mockWork = { id: '019e1d69-4210-767b-acd5-1de151bd138b', series_id: 1, sequence_numeric: 1 };
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: mockWork }),
+      } as Response);
+
+      const result = await client.fetchWork('019e1d69-4210-767b-acd5-1de151bd138b');
+      expect(result).toEqual(mockWork);
+    });
+
+    it('calls correct URL', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: { id: 'test-uuid' } }),
+      } as Response);
+
+      await client.fetchWork('019e1d69-4210-767b-acd5-1de151bd138b');
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/v1/works/019e1d69-4210-767b-acd5-1de151bd138b'), expect.any(Object));
+    });
+
+    it('returns null when response is not ok', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+      } as Response);
+
+      const result = await client.fetchWork('019e1d69-4210-767b-acd5-1de151bd138b');
+      expect(result).toBeNull();
+    });
+
+    it('returns null when fetch throws a generic error', async () => {
+      mockFetch.mockRejectedValue(new Error('timeout'));
+
+      const result = await client.fetchWork('019e1d69-4210-767b-acd5-1de151bd138b');
+      expect(result).toBeNull();
+    });
+
+    it('rethrows ProviderThrottleError', async () => {
+      mockFetch.mockRejectedValue(new ProviderThrottleError(1000));
+
+      await expect(client.fetchWork('019e1d69-4210-767b-acd5-1de151bd138b')).rejects.toThrow(ProviderThrottleError);
+    });
+  });
 });

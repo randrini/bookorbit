@@ -1,8 +1,8 @@
 import { MetadataProviderKey } from '@bookorbit/types';
 import { describe, expect, it } from 'vitest';
 
-import { mapMangabakaSeries } from './mangabaka.mapper';
-import { MangabakaSeries } from './mangabaka.types';
+import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
+import { MangabakaCollection, MangabakaSeries, MangabakaWork } from './mangabaka.types';
 
 const baseSeries: MangabakaSeries = {
   id: 1,
@@ -301,5 +301,179 @@ describe('mapMangabakaSeries', () => {
     const series: MangabakaSeries = { ...baseSeries, published: null };
     const result = mapMangabakaSeries(series);
     expect(result?.publishedDate).toBeUndefined();
+  });
+});
+
+const mockCollection: MangabakaCollection = {
+  id: 'col-1',
+  series_id: 1,
+  title: 'Naruto Vol. 1',
+  language: { iso: 'en', language: 'English' },
+  publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'Viz Media' },
+  edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
+  type: 'volume',
+  format: 'paged',
+  medium: 'paperback',
+  status: 'published',
+  reading: 'rtl',
+  licensed: true,
+  description: { desc: 'Volume 1 description', source: 'mangabaka' },
+  note: null,
+  start_date: '2003-01-01',
+  end_date: null,
+  links: [],
+  related_collection_id: null,
+  count_main: 10,
+  count_extra: 0,
+  count_other: 0,
+  updated_at: '2024-01-01T00:00:00Z',
+};
+
+const mockWork: MangabakaWork = {
+  id: '019e1d69-4210-767b-acd5-1de151bd138b',
+  series_id: 1,
+  source_ids: [{ id: 'src-1', name: 'mangabaka' }],
+  sub_title: 'The Evil Spirit',
+  count_type: 'main',
+  images: [
+    {
+      id: 1,
+      series_id: 1,
+      work_id: '019e1d69-4210-767b-acd5-1de151bd138b',
+      index: '1',
+      index_numeric: 1,
+      type: 'cover',
+      language: 'en',
+      note: null,
+      content_rating: 'safe',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+      hashes: {},
+      image: {
+        raw: { url: 'https://images.mangabaka.dev/raw', size: 50000, height: 800, width: 600, blurhash: 'test', thumbhash: 'test', format: 'jpeg' },
+        x150: { x1: 'https://cdn.mangabaka.dev/x150/work', x2: '', x3: '' },
+        x250: { x1: 'https://cdn.mangabaka.dev/x250/work', x2: '', x3: '' },
+        x350: { x1: 'https://cdn.mangabaka.dev/x350/work', x2: '', x3: '' },
+      },
+    },
+  ],
+  release_date: '2003-03-15',
+  sequence_string: '1',
+  sequence_numeric: 1,
+  identifiers: [{ id: '978-1-56931-900-0', name: 'isbn' }],
+  trim: null,
+  description: { desc: '  The first volume of Naruto.  ', source: 'mangabaka' },
+  note: null,
+  pages: 200,
+  price: null,
+  links: [],
+  inc_chapters: null,
+  part_of_volume: null,
+  revision: null,
+  updated_at: '2024-01-01T00:00:00Z',
+  collections: [mockCollection],
+};
+
+describe('pickBestCollection', () => {
+  it('prefers English volume collection over non-English', () => {
+    const nonEnglish: MangabakaCollection = { ...mockCollection, language: { iso: 'ja', language: 'Japanese' } };
+    const result = pickBestCollection([nonEnglish, mockCollection]);
+    expect(result?.id).toBe('col-1');
+  });
+
+  it('prefers type "volume" over other types', () => {
+    const nonVolume: MangabakaCollection = { ...mockCollection, type: 'omnibus', id: 'col-omnibus' };
+    const result = pickBestCollection([nonVolume, mockCollection]);
+    expect(result?.id).toBe('col-1');
+  });
+
+  it('returns null for empty array', () => {
+    expect(pickBestCollection([])).toBeNull();
+  });
+});
+
+describe('mapMangabakaWork', () => {
+  it('maps all fields correctly', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries);
+
+    expect(result).not.toBeNull();
+    expect(result?.provider).toBe(MetadataProviderKey.MANGABAKA);
+    expect(result?.providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
+    expect(result?.title).toBe('DICE');
+    expect(result?.subtitle).toBe('The Evil Spirit');
+    expect(result?.authors).toEqual(['Hyun-Seok Yun']);
+    expect(result?.description).toBe('The first volume of Naruto.');
+    expect(result?.publisher).toBe('Viz Media');
+    expect(result?.publishedDate).toBe('2003-03-15');
+    expect(result?.publishedYear).toBe(2003);
+    expect(result?.language).toBe('en');
+    expect(result?.pageCount).toBe(200);
+    expect(result?.isbn13).toBe('9781569319000');
+    expect(result?.isbn10).toBeUndefined();
+    expect(result?.seriesName).toBe('DICE');
+    expect(result?.seriesIndex).toBe(1);
+    expect(result?.genres).toEqual(['action', 'drama', 'psychological']);
+    expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x250/work');
+    expect(result?.sourceUrl).toBe('https://mangabaka.org/work/019e1d69-4210-767b-acd5-1de151bd138b');
+    expect(result?.communityRating).toBeCloseTo(3.515, 1);
+  });
+
+  it('returns null for work without id', () => {
+    const result = mapMangabakaWork({ ...mockWork, id: '' }, baseSeries);
+    expect(result).toBeNull();
+  });
+
+  it('handles missing optional fields', () => {
+    const minimalWork: MangabakaWork = {
+      ...mockWork,
+      images: [],
+      description: null,
+      identifiers: [],
+      sub_title: null,
+      release_date: null,
+      pages: null,
+      collections: [],
+    };
+    const result = mapMangabakaWork(minimalWork, baseSeries);
+
+    expect(result).not.toBeNull();
+    expect(result?.coverUrl).toBeUndefined();
+    expect(result?.description).toBeUndefined();
+    expect(result?.subtitle).toBeUndefined();
+    expect(result?.publishedDate).toBeUndefined();
+    expect(result?.pageCount).toBeUndefined();
+    expect(result?.isbn13).toBeUndefined();
+    expect(result?.isbn10).toBeUndefined();
+    expect(result?.language).toBeUndefined();
+    expect(result?.publisher).toBe('LINE Webtoon');
+  });
+
+  it('classifies 13-digit ISBN as isbn13', () => {
+    const work: MangabakaWork = {
+      ...mockWork,
+      identifiers: [{ id: '9781569319000', name: 'isbn' }],
+    };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.isbn13).toBe('9781569319000');
+    expect(result?.isbn10).toBeUndefined();
+  });
+
+  it('classifies 10-digit ISBN as isbn10', () => {
+    const work: MangabakaWork = {
+      ...mockWork,
+      identifiers: [{ id: '1569319000', name: 'isbn' }],
+    };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.isbn10).toBe('1569319000');
+    expect(result?.isbn13).toBeUndefined();
+  });
+
+  it('handles ISBN with dashes and spaces', () => {
+    const work: MangabakaWork = {
+      ...mockWork,
+      identifiers: [{ id: '978-1-56931-900-0', name: 'isbn' }],
+    };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.isbn13).toBe('9781569319000');
   });
 });

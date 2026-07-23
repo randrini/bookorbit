@@ -1,6 +1,7 @@
 export interface MangabakaEnvelope<T> {
   status: number;
   data: T;
+  pagination?: MangabakaPagination;
 }
 
 export interface MangabakaSeries {
@@ -160,4 +161,142 @@ export interface MangabakaSourceRating {
   id: number | string | null;
   rating: number | null;
   rating_normalized: number | null;
+}
+
+export interface MangabakaPagination {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  page: number;
+  limit: number;
+}
+
+export interface MangabakaLanguage {
+  iso: string;
+  language: string;
+}
+
+export interface MangabakaCollectionPublisher {
+  id: number;
+  type: string;
+  sub_type: string;
+  aliases: unknown;
+  parent_id: number | null;
+  name: string;
+}
+
+export interface MangabakaCollectionEdition {
+  id: string;
+  name: string;
+  language: MangabakaLanguage;
+  description: string;
+  override_text: string | null;
+}
+
+export interface MangabakaCollectionLink {
+  type: string;
+  link: string;
+  language: string;
+}
+
+export interface MangabakaCollection {
+  id: string;
+  series_id: number;
+  title: string;
+  language: MangabakaLanguage;
+  publisher: MangabakaCollectionPublisher;
+  edition: MangabakaCollectionEdition;
+  type: string;
+  format: string;
+  medium: string;
+  status: string;
+  reading: string;
+  licensed: boolean;
+  description: { desc: string; source: string };
+  note: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  links: MangabakaCollectionLink[];
+  related_collection_id: string | null;
+  count_main: number;
+  count_extra: number;
+  count_other: number;
+  updated_at: string;
+}
+
+export interface MangabakaWorkImageVariant {
+  x1: string;
+  x2: string;
+  x3: string;
+}
+
+export interface MangabakaWorkImageRaw {
+  url: string;
+  size: number;
+  height: number;
+  width: number;
+  blurhash: string;
+  thumbhash: string;
+  format: string;
+}
+
+export interface MangabakaWorkImage {
+  id: number;
+  series_id: number;
+  work_id: string;
+  index: string;
+  index_numeric: number;
+  type: string;
+  language: string;
+  note: string | null;
+  content_rating: string;
+  created_at: string;
+  updated_at: string;
+  hashes: Record<string, string>;
+  image: {
+    raw: MangabakaWorkImageRaw;
+    x150: MangabakaWorkImageVariant | null;
+    x250: MangabakaWorkImageVariant | null;
+    x350: MangabakaWorkImageVariant | null;
+  };
+}
+
+export interface MangabakaWorkIdentifier {
+  id: string;
+  name: string;
+}
+
+export interface MangabakaWorkDescription {
+  desc: string;
+  source: string;
+}
+
+export interface MangabakaWorkLink {
+  type: string;
+  link: string;
+  language: string;
+}
+
+export interface MangabakaWork {
+  id: string;
+  series_id: number;
+  source_ids: { id: string; name: string }[];
+  sub_title: string | null;
+  count_type: string;
+  images: MangabakaWorkImage[];
+  release_date: string | null;
+  sequence_string: string;
+  sequence_numeric: number;
+  identifiers: MangabakaWorkIdentifier[];
+  trim: unknown;
+  description: MangabakaWorkDescription | null;
+  note: string | null;
+  pages: number | null;
+  price: unknown;
+  links: MangabakaWorkLink[];
+  inc_chapters: unknown;
+  part_of_volume: unknown;
+  revision: unknown;
+  updated_at: string;
+  collections: MangabakaCollection[];
 }

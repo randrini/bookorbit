@@ -1,6 +1,6 @@
 import { MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
 
-import { MangabakaSeries } from './mangabaka.types';
+import { MangabakaCollection, MangabakaSeries, MangabakaWork } from './mangabaka.types';
 
 const MANGABAKA_BASE_URL = 'https://mangabaka.org';
 
@@ -110,6 +110,78 @@ export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate |
     sourceUrl: resolveSourceUrl(series),
     seriesName: undefined,
     seriesIndex: resolveSeriesIndex(series),
+    ...(communityRating !== undefined ? { communityRating } : {}),
+  };
+}
+
+// Pick the best collection for English volume matching.
+// Prefers: type "volume", English language, then most works (count_main).
+export function pickBestCollection(collections: MangabakaCollection[]): MangabakaCollection | null {
+  if (collections.length === 0) return null;
+
+  const scored = collections.map((c) => {
+    let score = 0;
+    if (c.type === 'volume') score += 100;
+    if (c.language?.iso === 'en') score += 50;
+    score += c.count_main;
+    return { collection: c, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].collection;
+}
+
+export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): MetadataCandidate | null {
+  if (!work?.id) return null;
+
+  const communityRating = normalizeCommunityRating(series.rating);
+  const bestCollection = work.collections?.length ? pickBestCollection(work.collections) : null;
+
+  let isbn10: string | undefined;
+  let isbn13: string | undefined;
+  for (const ident of work.identifiers ?? []) {
+    if (ident.name === 'isbn') {
+      const clean = ident.id.replace(/[-\s]/g, '');
+      if (clean.length === 13 && clean.startsWith('978')) {
+        isbn13 = clean;
+      } else if (clean.length === 10) {
+        isbn10 = clean;
+      }
+    }
+  }
+
+  const coverUrl = work.images?.[0]?.image?.x250?.x1 ?? work.images?.[0]?.image?.raw?.url;
+
+  let publishedYear: number | undefined;
+  if (work.release_date) {
+    const year = parseInt(work.release_date.substring(0, 4), 10);
+    if (Number.isFinite(year) && year >= 1000 && year <= 2200) {
+      publishedYear = year;
+    }
+  }
+  if (publishedYear === undefined) {
+    publishedYear = resolvePublishedYear(series);
+  }
+
+  return {
+    provider: MetadataProviderKey.MANGABAKA,
+    providerId: work.id,
+    title: resolveTitle(series),
+    subtitle: work.sub_title ?? undefined,
+    authors: resolveAuthors(series),
+    description: work.description?.desc?.trim() || undefined,
+    publisher: bestCollection?.publisher?.name ?? resolvePublisher(series),
+    publishedDate: work.release_date ?? undefined,
+    publishedYear,
+    language: bestCollection?.language?.iso ?? undefined,
+    pageCount: work.pages ?? undefined,
+    ...(isbn13 ? { isbn13 } : {}),
+    ...(isbn10 ? { isbn10 } : {}),
+    seriesName: resolveTitle(series),
+    seriesIndex: work.sequence_numeric,
+    genres: resolveGenres(series),
+    coverUrl,
+    sourceUrl: `https://mangabaka.org/work/${work.id}`,
     ...(communityRating !== undefined ? { communityRating } : {}),
   };
 }

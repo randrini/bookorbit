@@ -18,3 +18,15 @@ const VOLUME_MARKER_RE = /\s+(?:t(?:ome)?|vol(?:ume)?|v|issue|ch(?:apter)?)\.?\s
 export function stripVolumeMarker(title: string): string {
   return title.replace(VOLUME_MARKER_RE, '').trim();
 }
+
+// Extracts a trailing volume number from a book title.
+// "Death Note T09" -> 9, "Death Note Vol. 9" -> 9, "Naruto v12" -> 12
+// Returns undefined when no volume marker is present.
+const VOLUME_NUMBER_RE = /\b(?:t(?:ome)?|vol(?:ume)?|v|issue|ch(?:apter)?)\.?\s*(\d+)\s*$/i;
+
+export function extractVolumeNumber(title: string): number | undefined {
+  const match = title.match(VOLUME_NUMBER_RE);
+  if (!match) return undefined;
+  const num = parseInt(match[1], 10);
+  return Number.isFinite(num) && num > 0 ? num : undefined;
+}

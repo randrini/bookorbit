@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProviderConfigService } from '../../../metadata-preferences/provider-config.service';
 import { MangabakaClient } from './mangabaka.client';
 import { MangabakaProvider } from './mangabaka.provider';
-import { MangabakaSeries } from './mangabaka.types';
+import { MangabakaCollection, MangabakaSeries, MangabakaWork } from './mangabaka.types';
 
 const enabledConfig: ProviderConfigurations = {
   google: { enabled: false, apiKey: '' },
@@ -88,6 +88,9 @@ describe('MangabakaProvider', () => {
             search: vi.fn().mockResolvedValue([]),
             match: vi.fn().mockResolvedValue([]),
             fetchSeries: vi.fn().mockResolvedValue(null),
+            fetchCollections: vi.fn().mockResolvedValue([]),
+            fetchWorks: vi.fn().mockResolvedValue([]),
+            fetchWork: vi.fn().mockResolvedValue(null),
           },
         },
         {
@@ -252,25 +255,161 @@ describe('MangabakaProvider', () => {
 
       expect(client.match).toHaveBeenCalledWith('DICE', 10, controller.signal);
     });
+
+    it('with volume number: fetches collections+works and returns work candidate', async () => {
+      const mockCollection: MangabakaCollection = {
+        id: 'col-1',
+        series_id: 1,
+        title: 'DICE Vol. 1',
+        language: { iso: 'en', language: 'English' },
+        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
+        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
+        type: 'volume',
+        format: 'paged',
+        medium: 'digital',
+        status: 'published',
+        reading: 'rtl',
+        licensed: true,
+        description: { desc: '', source: 'mangabaka' },
+        note: null,
+        start_date: null,
+        end_date: null,
+        links: [],
+        related_collection_id: null,
+        count_main: 10,
+        count_extra: 0,
+        count_other: 0,
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      const mockWork: MangabakaWork = {
+        id: '019e1d69-4210-767b-acd5-1de151bd138b',
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '1',
+        sequence_numeric: 1,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [mockCollection],
+      };
+
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
+      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
+
+      const result = await provider.search({ title: 'DICE T01' });
+
+      expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(client.fetchCollections).toHaveBeenCalledWith(1, undefined);
+      expect(client.fetchWorks).toHaveBeenCalledWith('col-1', undefined);
+      expect(result).toHaveLength(1);
+      expect(result[0].providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
+      expect(result[0].seriesIndex).toBe(1);
+    });
+
+    it('with volume number but no matching work: falls back to series candidates', async () => {
+      const mockCollection: MangabakaCollection = {
+        id: 'col-1',
+        series_id: 1,
+        title: 'DICE Vol. 1',
+        language: { iso: 'en', language: 'English' },
+        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
+        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
+        type: 'volume',
+        format: 'paged',
+        medium: 'digital',
+        status: 'published',
+        reading: 'rtl',
+        licensed: true,
+        description: { desc: '', source: 'mangabaka' },
+        note: null,
+        start_date: null,
+        end_date: null,
+        links: [],
+        related_collection_id: null,
+        count_main: 10,
+        count_extra: 0,
+        count_other: 0,
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      const mockWork: MangabakaWork = {
+        id: '019e1d69-4210-767b-acd5-1de151bd138b',
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '2',
+        sequence_numeric: 2,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [mockCollection],
+      };
+
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
+      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
+
+      const result = await provider.search({ title: 'DICE T01' });
+
+      // sequence_numeric is 2, we searched for volume 1, so no match -> fallback to series
+      expect(result).toHaveLength(1);
+      expect(result[0].providerId).toBe('1');
+    });
+
+    it('without volume number: returns series candidates without collection/work fetch', async () => {
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+
+      const result = await provider.search({ title: 'DICE' });
+
+      expect(client.fetchCollections).not.toHaveBeenCalled();
+      expect(client.fetchWorks).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].providerId).toBe('1');
+    });
   });
 
   describe('lookupById()', () => {
+    const validUuid = '019e1d69-4210-767b-acd5-1de151bd138b';
+
     it('returns null when provider is disabled', async () => {
       vi.mocked(providerConfig.getConfig).mockResolvedValue(disabledConfig);
-      const result = await provider.lookupById('1');
+      const result = await provider.lookupById(validUuid);
       expect(result).toBeNull();
     });
 
-    it('returns null for non-numeric ID', async () => {
+    it('returns null for non-UUID ID', async () => {
       const result = await provider.lookupById('abc');
       expect(result).toBeNull();
-      expect(client.fetchSeries).not.toHaveBeenCalled();
+      expect(client.fetchWork).not.toHaveBeenCalled();
     });
 
-    it('returns null for ID with trailing non-numeric characters', async () => {
-      const result = await provider.lookupById('123abc');
+    it('returns null for numeric ID (old format)', async () => {
+      const result = await provider.lookupById('123');
       expect(result).toBeNull();
-      expect(client.fetchSeries).not.toHaveBeenCalled();
+      expect(client.fetchWork).not.toHaveBeenCalled();
     });
 
     it('returns null for empty string ID', async () => {
@@ -278,44 +417,135 @@ describe('MangabakaProvider', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null when fetchSeries returns null', async () => {
-      vi.mocked(client.fetchSeries).mockResolvedValue(null);
-      const result = await provider.lookupById('1');
+    it('returns null when fetchWork returns null', async () => {
+      vi.mocked(client.fetchWork).mockResolvedValue(null);
+      const result = await provider.lookupById(validUuid);
       expect(result).toBeNull();
     });
 
-    it('returns mapped candidate for valid numeric ID', async () => {
+    it('returns null when fetchSeries returns null after work found', async () => {
+      const mockWork: MangabakaWork = {
+        id: validUuid,
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '1',
+        sequence_numeric: 1,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [],
+      };
+      vi.mocked(client.fetchWork).mockResolvedValue(mockWork);
+      vi.mocked(client.fetchSeries).mockResolvedValue(null);
+
+      const result = await provider.lookupById(validUuid);
+      expect(result).toBeNull();
+    });
+
+    it('returns mapped candidate for valid UUID', async () => {
+      const mockWork: MangabakaWork = {
+        id: validUuid,
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '1',
+        sequence_numeric: 1,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [],
+      };
+      vi.mocked(client.fetchWork).mockResolvedValue(mockWork);
       vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
-      const result = await provider.lookupById('1');
+
+      const result = await provider.lookupById(validUuid);
       expect(result).not.toBeNull();
-      expect(result?.providerId).toBe('1');
+      expect(result?.providerId).toBe(validUuid);
       expect(result?.title).toBe('DICE');
     });
 
-    it('calls fetchSeries with correct integer ID', async () => {
+    it('calls fetchWork with correct UUID', async () => {
+      vi.mocked(client.fetchWork).mockResolvedValue({
+        id: validUuid,
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '1',
+        sequence_numeric: 1,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [],
+      });
       vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
-      await provider.lookupById('42');
-      expect(client.fetchSeries).toHaveBeenCalledWith(42, undefined);
+      await provider.lookupById(validUuid);
+      expect(client.fetchWork).toHaveBeenCalledWith(validUuid, undefined);
     });
 
-    it('passes signal to fetchSeries', async () => {
+    it('passes signal to fetchWork and fetchSeries', async () => {
       const controller = new AbortController();
+      const mockWork: MangabakaWork = {
+        id: validUuid,
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '1',
+        sequence_numeric: 1,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [],
+      };
+      vi.mocked(client.fetchWork).mockResolvedValue(mockWork);
       vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
-      await provider.lookupById('1', controller.signal);
+      await provider.lookupById(validUuid, controller.signal);
+      expect(client.fetchWork).toHaveBeenCalledWith(validUuid, controller.signal);
       expect(client.fetchSeries).toHaveBeenCalledWith(1, controller.signal);
-    });
-
-    it('returns null for unsafe integer (overflow)', async () => {
-      const unsafe = String(Number.MAX_SAFE_INTEGER + 1);
-      const result = await provider.lookupById(unsafe);
-      expect(result).toBeNull();
-    });
-
-    it('returns null when mapper returns null (series id=0)', async () => {
-      const zeroIdSeries: MangabakaSeries = { ...mockSeries, id: 0 };
-      vi.mocked(client.fetchSeries).mockResolvedValue(zeroIdSeries);
-      const result = await provider.lookupById('1');
-      expect(result).toBeNull();
     });
   });
 });

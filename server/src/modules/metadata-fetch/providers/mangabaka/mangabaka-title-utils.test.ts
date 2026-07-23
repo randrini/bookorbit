@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { stripVolumeMarker } from './mangabaka-title-utils';
+import { extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 describe('stripVolumeMarker', () => {
   describe('strips trailing volume markers', () => {
@@ -56,4 +56,27 @@ describe('stripVolumeMarker', () => {
   it('trims surrounding whitespace', () => {
     expect(stripVolumeMarker('  Death Note  ')).toBe('Death Note');
   });
+});
+
+describe('extractVolumeNumber', () => {
+  const cases: Array<[string, number | undefined]> = [
+    ['Death Note T09', 9],
+    ['Death Note Tome 09', 9],
+    ['Death Note vol09', 9],
+    ['Death Note v09', 9],
+    ['Death Note volume 09', 9],
+    ['Death Note issue 09', 9],
+    ['Death Note Vol. 9', 9],
+    ['Death Note ch12', 12],
+    ['Death Note chapter 12', 12],
+    ['Death Note', undefined],
+    ['Death Note T0', undefined],
+  ];
+
+  for (const [input, expected] of cases) {
+    const label = expected !== undefined ? `extracts ${expected} from "${input}"` : `returns undefined for "${input}"`;
+    it(label, () => {
+      expect(extractVolumeNumber(input)).toBe(expected);
+    });
+  }
 });

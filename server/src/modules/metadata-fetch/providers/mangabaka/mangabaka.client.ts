@@ -4,7 +4,7 @@ import { fetchWithThrottle } from '../../fetch-with-throttle';
 import { ProviderThrottleError } from '../../provider-throttle.error';
 import { PROVIDER_DELAYS_MS, PROVIDER_TIMEOUT_MS } from '../provider-constants';
 import { buildRequestSignal, sanitizeLogError, sleep } from '../provider-utils';
-import { MangabakaEnvelope, MangabakaSeries } from './mangabaka.types';
+import { MangabakaCollection, MangabakaEnvelope, MangabakaPagination, MangabakaSeries, MangabakaWork } from './mangabaka.types';
 
 const BASE_URL = 'https://api.mangabaka.org';
 const USER_AGENT = 'bookorbit/1.0 (+https://github.com/bookorbit/bookorbit)';
@@ -48,6 +48,45 @@ export class MangabakaClient {
 
   async fetchSeries(id: number, signal?: AbortSignal): Promise<MangabakaSeries | null> {
     const envelope = await this.get<MangabakaEnvelope<MangabakaSeries>>('fetchSeries', `/v1/series/${id}`, signal);
+    if (!envelope?.data) return null;
+    return envelope.data;
+  }
+
+  async fetchCollections(seriesId: number, signal?: AbortSignal): Promise<MangabakaCollection[]> {
+    const envelope = await this.get<MangabakaEnvelope<MangabakaCollection[]>>('fetchCollections', `/v1/series/${seriesId}/collections`, signal);
+    return envelope?.data ?? [];
+  }
+
+  async fetchWorks(collectionId: string, signal?: AbortSignal): Promise<MangabakaWork[]> {
+    const limit = 100;
+    const firstEnvelope = await this.get<MangabakaEnvelope<MangabakaWork[]> & { pagination: MangabakaPagination }>(
+      'fetchWorks',
+      `/v1/collections/${collectionId}/works?limit=${limit}&page=1`,
+      signal,
+    );
+    if (!firstEnvelope?.data) return [];
+
+    const allWorks = [...firstEnvelope.data];
+    const pagination = firstEnvelope.pagination;
+    if (pagination && pagination.count > limit) {
+      const totalPages = Math.ceil(pagination.count / limit);
+      for (let page = 2; page <= totalPages; page++) {
+        const envelope = await this.get<MangabakaEnvelope<MangabakaWork[]> & { pagination: MangabakaPagination }>(
+          'fetchWorks',
+          `/v1/collections/${collectionId}/works?limit=${limit}&page=${page}`,
+          signal,
+        );
+        if (envelope?.data) {
+          allWorks.push(...envelope.data);
+        }
+      }
+    }
+
+    return allWorks;
+  }
+
+  async fetchWork(workId: string, signal?: AbortSignal): Promise<MangabakaWork | null> {
+    const envelope = await this.get<MangabakaEnvelope<MangabakaWork>>('fetchWork', `/v1/works/${workId}`, signal);
     if (!envelope?.data) return null;
     return envelope.data;
   }
