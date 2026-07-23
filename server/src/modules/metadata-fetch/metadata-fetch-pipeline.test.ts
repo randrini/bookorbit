@@ -1047,7 +1047,7 @@ function makeProviderConfig(overrides: Partial<ProviderConfigurations> = {}): Pr
     kobo: { enabled: true, country: 'us', language: 'en', ...overrides.kobo },
     lubimyczytac: { enabled: false, ...overrides.lubimyczytac },
     aladin: { enabled: false, ttbKey: '', ...overrides.aladin },
-    mangabaka: { enabled: false },
-    librofm: { enabled: false },
+    mangabaka: { enabled: false, ...overrides.mangabaka },
+    librofm: { enabled: false, ...overrides.librofm },
   };
 }

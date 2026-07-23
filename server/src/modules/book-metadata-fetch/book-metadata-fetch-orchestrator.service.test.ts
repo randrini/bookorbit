@@ -639,6 +639,7 @@ describe('BookMetadataFetchOrchestratorService', () => {
           [MetadataProviderKey.RANOBEDB]: 'ranobedb-1',
           [MetadataProviderKey.LUBIMYCZYTAC]: 'lubimyczytac-1',
           [MetadataProviderKey.ALADIN]: 'aladin-1',
+          [MetadataProviderKey.MANGABAKA]: 'mangabaka-1',
         },
       }),
       expect.any(Object),
