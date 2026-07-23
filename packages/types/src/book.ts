@@ -263,6 +263,7 @@ export type BookMetadataRefreshPreviewFields = {
   ranobedbId?: string | null;
   lubimyczytacId?: string | null;
   aladinId?: string | null;
+  mangabakaId?: string | null;
   audioMetadata?: {
     narrators?: string[];
     durationSeconds?: number | null;
