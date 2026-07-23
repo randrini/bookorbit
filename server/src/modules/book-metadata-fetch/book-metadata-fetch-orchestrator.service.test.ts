@@ -608,6 +608,7 @@ describe('BookMetadataFetchOrchestratorService', () => {
           ranobedbId: 'ranobedb-1',
           lubimyczytacId: 'lubimyczytac-1',
           aladinId: 'aladin-1',
+          mangabakaId: 'mangabaka-1',
         },
       },
       authorRows: [],

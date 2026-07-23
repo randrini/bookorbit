@@ -29,6 +29,7 @@ export function hasOpfMetadata(metadata: ParsedOpf): boolean {
     metadata.koboId !== null ||
     metadata.lubimyczytacId !== null ||
     metadata.aladinId !== null ||
+    metadata.mangabakaId !== null ||
     metadata.itunesId !== null
   );
 }
@@ -61,6 +62,7 @@ export function mapOpfMetadata(metadata: ParsedOpf, cover: Buffer | null): Parse
     koboId: metadata.koboId,
     lubimyczytacId: metadata.lubimyczytacId,
     aladinId: metadata.aladinId,
+    mangabakaId: metadata.mangabakaId,
     itunesId: metadata.itunesId,
     cover,
   };

@@ -52,6 +52,7 @@ export class ComicFormatExtractor implements FormatExtractor {
       koboId: comicMetadata?.koboId ?? null,
       lubimyczytacId: comicMetadata?.lubimyczytacId ?? null,
       aladinId: comicMetadata?.aladinId ?? null,
+      mangabakaId: comicMetadata?.mangabakaId ?? null,
       itunesId: comicMetadata?.itunesId ?? null,
       cover: cover ?? null,
       comicMetadata: comicMetadata?.comicMetadata ?? null,

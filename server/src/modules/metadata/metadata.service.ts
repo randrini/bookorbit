@@ -652,6 +652,7 @@ export class MetadataService {
       koboId: data.koboId,
       lubimyczytacId: data.lubimyczytacId,
       aladinId: data.aladinId,
+      mangabakaId: data.mangabakaId,
       itunesId: data.itunesId,
       comicMetadata: data.comicMetadata ?? undefined,
     });
@@ -689,6 +690,7 @@ export class MetadataService {
     if (filtered.koboId !== undefined) scalarFields.koboId = filtered.koboId;
     if (filtered.lubimyczytacId !== undefined) scalarFields.lubimyczytacId = filtered.lubimyczytacId;
     if (filtered.aladinId !== undefined) scalarFields.aladinId = filtered.aladinId;
+    if (filtered.mangabakaId !== undefined) scalarFields.mangabakaId = filtered.mangabakaId;
     if (filtered.itunesId !== undefined) scalarFields.itunesId = filtered.itunesId;
     if (Object.keys(scalarFields).length > 0) {
       const shouldSyncSeries =

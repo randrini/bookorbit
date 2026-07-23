@@ -348,6 +348,7 @@ export class BookMetadataFetchOrchestratorService implements OnApplicationBootst
     if (filteredProviderIds[MetadataProviderKey.RANOBEDB]) scalarFields.ranobedbId = filteredProviderIds[MetadataProviderKey.RANOBEDB];
     if (filteredProviderIds[MetadataProviderKey.LUBIMYCZYTAC]) scalarFields.lubimyczytacId = filteredProviderIds[MetadataProviderKey.LUBIMYCZYTAC];
     if (filteredProviderIds[MetadataProviderKey.ALADIN]) scalarFields.aladinId = filteredProviderIds[MetadataProviderKey.ALADIN];
+    if (filteredProviderIds[MetadataProviderKey.MANGABAKA]) scalarFields.mangabakaId = filteredProviderIds[MetadataProviderKey.MANGABAKA];
 
     const duration = this.asNullableNumber(filteredResolved.duration);
     if (duration !== undefined) scalarFields.durationSeconds = duration;
@@ -451,6 +452,7 @@ export class BookMetadataFetchOrchestratorService implements OnApplicationBootst
     ranobedbId?: string | null;
     lubimyczytacId?: string | null;
     aladinId?: string | null;
+    mangabakaId?: string | null;
   }): Partial<Record<MetadataProviderKey, string>> {
     const ids: Partial<Record<MetadataProviderKey, string>> = {};
     if (meta.googleBooksId) ids[MetadataProviderKey.GOOGLE] = meta.googleBooksId;
@@ -466,6 +468,7 @@ export class BookMetadataFetchOrchestratorService implements OnApplicationBootst
     if (meta.ranobedbId) ids[MetadataProviderKey.RANOBEDB] = meta.ranobedbId;
     if (meta.lubimyczytacId) ids[MetadataProviderKey.LUBIMYCZYTAC] = meta.lubimyczytacId;
     if (meta.aladinId) ids[MetadataProviderKey.ALADIN] = meta.aladinId;
+    if (meta.mangabakaId) ids[MetadataProviderKey.MANGABAKA] = meta.mangabakaId;
     return ids;
   }
 

@@ -23,6 +23,7 @@ export type ScoreData = {
   itunesId: string | null;
   koboId: string | null;
   aladinId: string | null;
+  mangabakaId: string | null;
   authorCount: number;
   genreCount: number;
   tagCount: number;
@@ -56,6 +57,7 @@ const SCORE_RULES: Record<MetadataScoreField, ScoreRule> = {
   itunesId: { kind: 'string', value: (data) => data.itunesId },
   koboId: { kind: 'string', value: (data) => data.koboId },
   aladinId: { kind: 'string', value: (data) => data.aladinId },
+  mangabakaId: { kind: 'string', value: (data) => data.mangabakaId },
 };
 
 @Injectable()

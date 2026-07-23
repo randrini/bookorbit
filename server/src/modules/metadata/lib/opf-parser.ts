@@ -28,6 +28,7 @@ export interface ParsedOpf {
   koboId: string | null;
   lubimyczytacId: string | null;
   aladinId: string | null;
+  mangabakaId: string | null;
   itunesId: string | null;
   customMetadata: Record<string, string>;
   coverHref: string | null;
@@ -525,6 +526,7 @@ export function parseOpf(xml: string): ParsedOpf {
     koboId,
     lubimyczytacId,
     aladinId,
+    mangabakaId: null,
     itunesId,
     customMetadata,
     coverHref,

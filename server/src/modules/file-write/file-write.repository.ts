@@ -213,6 +213,7 @@ export class FileWriteRepository {
       koboId: meta.koboId,
       lubimyczytacId: meta.lubimyczytacId,
       aladinId: meta.aladinId,
+      mangabakaId: meta.mangabakaId,
       itunesId: meta.itunesId,
       audibleId: meta.audibleId,
       librofmId: meta.librofmId,

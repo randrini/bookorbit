@@ -98,6 +98,7 @@ export class MetadataFetchService {
       [MetadataProviderKey.RANOBEDB]: row.ranobedbId ?? undefined,
       [MetadataProviderKey.LUBIMYCZYTAC]: row.lubimyczytacId ?? undefined,
       [MetadataProviderKey.ALADIN]: row.aladinId ?? undefined,
+      [MetadataProviderKey.MANGABAKA]: row.mangabakaId ?? undefined,
     };
   }
 

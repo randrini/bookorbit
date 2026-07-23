@@ -76,6 +76,7 @@ export class UpdateBookMetadataDto {
   @IsOptional() @IsString() @MaxLength(50) ranobedbId?: string | null;
   @IsOptional() @IsString() @MaxLength(512) lubimyczytacId?: string | null;
   @IsOptional() @IsString() @MaxLength(20) aladinId?: string | null;
+  @IsOptional() @IsString() @MaxLength(50) mangabakaId?: string | null;
   @IsOptional() @ValidateNested() @Type(() => ComicMetadataDto) comicMetadata?: ComicMetadataDto;
   @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => CustomMetadataValueDto) customMetadata?: CustomMetadataValueDto[];
 }

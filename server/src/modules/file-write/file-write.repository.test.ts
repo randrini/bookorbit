@@ -100,6 +100,7 @@ describe('FileWriteRepository', () => {
       koboId: 'kb',
       lubimyczytacId: 'lc',
       aladinId: 'al',
+      mangabakaId: 'mg',
       itunesId: 'it',
       audibleId: 'aud',
       librofmId: '9781234567890',
