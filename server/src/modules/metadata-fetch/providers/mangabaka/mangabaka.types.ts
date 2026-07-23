@@ -3,18 +3,6 @@ export interface MangabakaEnvelope<T> {
   data: T;
 }
 
-export interface MangabakaSearchResponse extends MangabakaEnvelope<MangabakaSeries[]> {
-  pagination: MangabakaPagination;
-}
-
-export interface MangabakaPagination {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  page: number;
-  limit: number;
-}
-
 export interface MangabakaSeries {
   id: number;
   state: string;
@@ -48,7 +36,7 @@ export interface MangabakaSeries {
   tags_v2: MangabakaTag[];
   tags: string[];
   last_updated_at: string;
-  relationships: MangabakaRelationship[] | null;
+  relationships: MangabakaRelationship | null;
   relationships_v2: MangabakaRelationshipV2[];
   source: MangabakaSourceRatings | null;
 }

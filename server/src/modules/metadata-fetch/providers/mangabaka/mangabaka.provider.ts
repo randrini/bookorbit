@@ -31,14 +31,10 @@ export class MangabakaProvider implements IdentifiableProvider {
     const query = params.author ? `${params.title ?? ''} ${params.author}`.trim() : (params.title ?? '');
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
 
-    const ids = await this.client.search(query, maxResults, params.signal);
-    if (ids.length === 0) return [];
-
+    const series = await this.client.match(query, maxResults, params.signal);
     const candidates: MetadataCandidate[] = [];
-    for (const id of ids) {
-      const series = await this.client.fetchSeries(id, params.signal);
-      if (!series) continue;
-      const candidate = mapMangabakaSeries(series);
+    for (const s of series) {
+      const candidate = mapMangabakaSeries(s);
       if (candidate) candidates.push(candidate);
     }
     return candidates;
