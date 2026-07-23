@@ -261,6 +261,7 @@ const providerIds = computed<ProviderIds>(() => ({
   ranobedb: passthroughMetadata.value.ranobedbId ?? null,
   lubimyczytac: passthroughMetadata.value.lubimyczytacId ?? null,
   aladin: passthroughMetadata.value.aladinId ?? null,
+  mangabaka: passthroughMetadata.value.mangabakaId ?? null,
 }))
 
 function openSearch() {

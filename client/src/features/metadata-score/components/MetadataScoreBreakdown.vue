@@ -69,6 +69,8 @@ function isFieldFilled(field: MetadataScoreField): boolean {
       return !!b.providerIds.itunes?.trim()
     case 'aladinId':
       return !!b.providerIds.aladin?.trim()
+    case 'mangabakaId':
+      return !!b.providerIds.mangabaka?.trim()
     default:
       return false
   }
