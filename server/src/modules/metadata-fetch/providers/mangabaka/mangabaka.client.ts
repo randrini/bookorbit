@@ -33,11 +33,7 @@ export class MangabakaClient {
       q: query,
       limit: String(limit),
     });
-    const envelope = await this.get<MangabakaEnvelope<MangabakaSeries[]>>(
-      'match',
-      `/v1/series/match?${params.toString()}`,
-      signal,
-    );
+    const envelope = await this.get<MangabakaEnvelope<MangabakaSeries[]>>('match', `/v1/series/match?${params.toString()}`, signal);
     return envelope?.data ?? [];
   }
 
@@ -59,9 +55,7 @@ export class MangabakaClient {
       });
 
       if (!res.ok) {
-        this.logger.warn(
-          `[mangabaka] [fail] op=${op} status=${res.status} durationMs=${Date.now() - startedAt} error="non-ok response"`,
-        );
+        this.logger.warn(`[mangabaka] [fail] op=${op} status=${res.status} durationMs=${Date.now() - startedAt} error="non-ok response"`);
         return null;
       }
 
