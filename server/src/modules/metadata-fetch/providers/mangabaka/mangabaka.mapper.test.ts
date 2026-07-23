@@ -387,6 +387,12 @@ describe('pickBestCollection', () => {
     expect(result?.id).toBe('col-1');
   });
 
+  it('prefers digital medium over paperback when all else is equal', () => {
+    const digital: MangabakaCollection = { ...mockCollection, medium: 'digital', id: 'col-digital' };
+    const result = pickBestCollection([mockCollection, digital]);
+    expect(result?.id).toBe('col-digital');
+  });
+
   it('returns null for empty array', () => {
     expect(pickBestCollection([])).toBeNull();
   });

@@ -114,8 +114,9 @@ export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate |
   };
 }
 
-// Pick the best collection for English volume matching.
-// Prefers: type "volume", English language, then most works (count_main).
+// Pick the best collection for volume matching.
+// Prefers: type "volume", English language, digital medium (complete covers),
+// then most works (count_main).
 export function pickBestCollection(collections: MangabakaCollection[]): MangabakaCollection | null {
   if (collections.length === 0) return null;
 
@@ -123,6 +124,7 @@ export function pickBestCollection(collections: MangabakaCollection[]): Mangabak
     let score = 0;
     if (c.type === 'volume') score += 100;
     if (c.language?.iso === 'en') score += 50;
+    if (c.medium === 'digital') score += 40;
     score += c.count_main;
     return { collection: c, score };
   });
