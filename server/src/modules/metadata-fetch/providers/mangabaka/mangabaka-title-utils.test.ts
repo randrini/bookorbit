@@ -20,6 +20,25 @@ describe('stripVolumeMarker', () => {
       ['Death Note T09 ', 'Death Note'],
       ['Berserk Vol.42', 'Berserk'],
       ['One Piece v100', 'One Piece'],
+      ['Fairy Tail 13', 'Fairy Tail'],
+      ['Fairy Tail T13', 'Fairy Tail'],
+      ['Fairy Tail v13', 'Fairy Tail'],
+    ];
+
+    for (const [input, expected] of cases) {
+      it(`strips "${input}" -> "${expected}"`, () => {
+        expect(stripVolumeMarker(input)).toBe(expected);
+      });
+    }
+  });
+
+  describe('strips bracketed metadata blocks', () => {
+    const cases: Array<[string, string]> = [
+      ['Fairy Tail 13 [Hiro Mashima] [Manga FR] [Digital-1246]', 'Fairy Tail'],
+      ['Naruto [Manga] [Digital]', 'Naruto'],
+      ['Berserk Vol.42 [Kentaro Miura] [Dark Horse]', 'Berserk'],
+      ['One Piece [Eiichiro Oda]', 'One Piece'],
+      ['Title [Tag1] [Tag2] [Tag3]', 'Title'],
     ];
 
     for (const [input, expected] of cases) {
@@ -69,8 +88,14 @@ describe('extractVolumeNumber', () => {
     ['Death Note Vol. 9', 9],
     ['Death Note ch12', 12],
     ['Death Note chapter 12', 12],
+    ['Fairy Tail 13', 13],
+    ['Fairy Tail T13', 13],
+    ['Fairy Tail v13', 13],
+    ['Fairy Tail 13 [Hiro Mashima] [Manga FR] [Digital-1246]', 13],
     ['Death Note', undefined],
     ['Death Note T0', undefined],
+    ['13', undefined],
+    ['', undefined],
   ];
 
   for (const [input, expected] of cases) {
