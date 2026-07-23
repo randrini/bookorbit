@@ -30,11 +30,11 @@ describe('AudnexusProvider', () => {
     comicvine: { enabled: false, apiKey: '' },
     ranobedb: { enabled: false },
     kobo: { enabled: false, country: 'us', language: 'en' },
-  lubimyczytac: { enabled: false },
-  mangabaka: { enabled: false },
-  librofm: { enabled: false },
-  aladin: { enabled: false, ttbKey: '' },
-};
+    lubimyczytac: { enabled: false },
+    mangabaka: { enabled: false },
+    librofm: { enabled: false },
+    aladin: { enabled: false, ttbKey: '' },
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

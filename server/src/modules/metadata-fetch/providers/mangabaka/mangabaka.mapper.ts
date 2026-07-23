@@ -1,6 +1,6 @@
 import { MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
 
-import { MangabakaSeries, MangabakaTitle } from './mangabaka.types';
+import { MangabakaSeries } from './mangabaka.types';
 
 const MANGABAKA_BASE_URL = 'https://mangabaka.org';
 
@@ -85,9 +85,7 @@ function resolveSourceUrl(series: MangabakaSeries): string {
 
 function resolveSeriesIndex(series: MangabakaSeries): number | undefined {
   if (!series.relationships_v2?.length) return undefined;
-  const parentRel = series.relationships_v2.find(
-    (r) => r.relation_type === 'parent' || r.relation_type === 'series',
-  );
+  const parentRel = series.relationships_v2.find((r) => r.relation_type === 'parent' || r.relation_type === 'series');
   if (!parentRel) return undefined;
   return undefined;
 }

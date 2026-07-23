@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { fetchWithThrottle } from '../../fetch-with-throttle';
 import { ProviderThrottleError } from '../../provider-throttle.error';
-import { PROVIDER_DELAYS_MS, PROVIDER_LIMITS, PROVIDER_TIMEOUT_MS } from '../provider-constants';
-import { buildRequestSignal, normalizeMaxCandidates, sanitizeLogError, sleep } from '../provider-utils';
+import { PROVIDER_DELAYS_MS, PROVIDER_TIMEOUT_MS } from '../provider-constants';
+import { buildRequestSignal, sanitizeLogError, sleep } from '../provider-utils';
 import { MangabakaSearchResponse, MangabakaSeries } from './mangabaka.types';
 
 const BASE_URL = 'https://api.mangabaka.org';
@@ -54,9 +54,7 @@ export class MangabakaClient {
       });
 
       if (!res.ok) {
-        this.logger.warn(
-          `[mangabaka] [fail] op=${op} status=${res.status} durationMs=${Date.now() - startedAt} error="non-ok response"`,
-        );
+        this.logger.warn(`[mangabaka] [fail] op=${op} status=${res.status} durationMs=${Date.now() - startedAt} error="non-ok response"`);
         return null;
       }
 
@@ -68,9 +66,7 @@ export class MangabakaClient {
         this.logger.warn(`[mangabaka] [fail] op=${op} durationMs=${Date.now() - startedAt} error="throttled"`);
         throw err;
       }
-      this.logger.warn(
-        `[mangabaka] [fail] op=${op} durationMs=${Date.now() - startedAt} error="${sanitizeLogError(err)}"`,
-      );
+      this.logger.warn(`[mangabaka] [fail] op=${op} durationMs=${Date.now() - startedAt} error="${sanitizeLogError(err)}"`);
       return null;
     }
   }

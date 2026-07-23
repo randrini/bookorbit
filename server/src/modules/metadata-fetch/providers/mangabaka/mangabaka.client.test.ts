@@ -36,7 +36,10 @@ describe('MangabakaClient', () => {
           Promise.resolve({
             status: 200,
             pagination: { count: 2, next: null, previous: null, page: 1, limit: 5 },
-            data: [{ id: 1, title: 'DICE' }, { id: 2, title: 'One Piece' }],
+            data: [
+              { id: 1, title: 'DICE' },
+              { id: 2, title: 'One Piece' },
+            ],
           }),
       } as Response);
 
