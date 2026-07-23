@@ -8,6 +8,7 @@ import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
 import { mapMangabakaSeries } from './mangabaka.mapper';
+import { stripVolumeMarker } from './mangabaka-title-utils';
 
 @Injectable()
 export class MangabakaProvider implements IdentifiableProvider {
@@ -28,10 +29,17 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     if (!params.title && !params.author) return [];
 
-    const query = params.author ? `${params.title ?? ''} ${params.author}`.trim() : (params.title ?? '');
+    const cleanTitle = params.title ? stripVolumeMarker(params.title) : undefined;
+    const query = params.author ? `${cleanTitle ?? ''} ${params.author}`.trim() : (cleanTitle ?? '');
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
 
-    const series = await this.client.match(query, maxResults, params.signal);
+    // Prefer the stable /v1/series/search endpoint (returns full series objects).
+    // Fall back to /v1/series/match (fuzzy) when search yields no candidates.
+    let series = await this.client.search(query, maxResults, params.signal);
+    if (series.length === 0) {
+      series = await this.client.match(query, maxResults, params.signal);
+    }
+
     const candidates: MetadataCandidate[] = [];
     for (const s of series) {
       const candidate = mapMangabakaSeries(s);

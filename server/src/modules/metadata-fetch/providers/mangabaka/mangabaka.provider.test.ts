@@ -85,6 +85,7 @@ describe('MangabakaProvider', () => {
         {
           provide: MangabakaClient,
           useValue: {
+            search: vi.fn().mockResolvedValue([]),
             match: vi.fn().mockResolvedValue([]),
             fetchSeries: vi.fn().mockResolvedValue(null),
           },
@@ -126,59 +127,100 @@ describe('MangabakaProvider', () => {
       vi.mocked(providerConfig.getConfig).mockResolvedValue(disabledConfig);
       const result = await provider.search({ title: 'DICE' });
       expect(result).toEqual([]);
+      expect(client.search).not.toHaveBeenCalled();
       expect(client.match).not.toHaveBeenCalled();
     });
 
     it('returns empty array when no title and no author', async () => {
       const result = await provider.search({});
       expect(result).toEqual([]);
+      expect(client.search).not.toHaveBeenCalled();
       expect(client.match).not.toHaveBeenCalled();
     });
 
     it('searches by title when only title provided', async () => {
-      vi.mocked(client.match).mockResolvedValue([mockSeries]);
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
 
       const result = await provider.search({ title: 'DICE' });
 
-      expect(client.match).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(client.match).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0].providerId).toBe('1');
     });
 
     it('combines title and author in query', async () => {
-      vi.mocked(client.match).mockResolvedValue([]);
+      vi.mocked(client.search).mockResolvedValue([]);
 
       await provider.search({ title: 'DICE', author: 'Yun' });
 
-      expect(client.match).toHaveBeenCalledWith('DICE Yun', 10, undefined);
+      expect(client.search).toHaveBeenCalledWith('DICE Yun', 10, undefined);
     });
 
     it('uses author alone when no title provided', async () => {
-      vi.mocked(client.match).mockResolvedValue([]);
+      vi.mocked(client.search).mockResolvedValue([]);
 
       await provider.search({ author: 'Yun' });
 
-      expect(client.match).toHaveBeenCalledWith('Yun', 10, undefined);
+      expect(client.search).toHaveBeenCalledWith('Yun', 10, undefined);
     });
 
     it('respects maxCandidatesPerProvider', async () => {
-      vi.mocked(client.match).mockResolvedValue([mockSeries]);
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
 
       await provider.search({ title: 'DICE', maxCandidatesPerProvider: 3 });
 
-      expect(client.match).toHaveBeenCalledWith('DICE', 3, undefined);
+      expect(client.search).toHaveBeenCalledWith('DICE', 3, undefined);
     });
 
-    it('returns empty array when client.match returns no results', async () => {
+    it('returns empty array when both search and match return no results', async () => {
+      vi.mocked(client.search).mockResolvedValue([]);
       vi.mocked(client.match).mockResolvedValue([]);
 
       const result = await provider.search({ title: 'unknown' });
       expect(result).toEqual([]);
+      expect(client.match).toHaveBeenCalledWith('unknown', 10, undefined);
+    });
+
+    it('falls back to match when search returns no results', async () => {
+      vi.mocked(client.search).mockResolvedValue([]);
+      vi.mocked(client.match).mockResolvedValue([mockSeries]);
+
+      const result = await provider.search({ title: 'DICE' });
+
+      expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(client.match).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(result).toHaveLength(1);
+      expect(result[0].providerId).toBe('1');
+    });
+
+    it('does not call match when search returns results', async () => {
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+
+      await provider.search({ title: 'DICE' });
+
+      expect(client.match).not.toHaveBeenCalled();
+    });
+
+    it('strips volume markers from title before searching', async () => {
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+
+      await provider.search({ title: 'Death Note T09' });
+
+      expect(client.search).toHaveBeenCalledWith('Death Note', 10, undefined);
+    });
+
+    it('strips volume markers and combines with author', async () => {
+      vi.mocked(client.search).mockResolvedValue([]);
+
+      await provider.search({ title: 'Death Note Vol. 9', author: 'Ohba' });
+
+      expect(client.search).toHaveBeenCalledWith('Death Note Ohba', 10, undefined);
     });
 
     it('skips series where mapper returns null (id=0)', async () => {
       const zeroIdSeries: MangabakaSeries = { ...mockSeries, id: 0 };
-      vi.mocked(client.match).mockResolvedValue([zeroIdSeries]);
+      vi.mocked(client.search).mockResolvedValue([zeroIdSeries]);
 
       const result = await provider.search({ title: 'DICE' });
       expect(result).toEqual([]);
@@ -186,7 +228,7 @@ describe('MangabakaProvider', () => {
 
     it('returns multiple candidates', async () => {
       const series2: MangabakaSeries = { ...mockSeries, id: 2 };
-      vi.mocked(client.match).mockResolvedValue([mockSeries, series2]);
+      vi.mocked(client.search).mockResolvedValue([mockSeries, series2]);
 
       const result = await provider.search({ title: 'DICE' });
       expect(result).toHaveLength(2);
@@ -194,6 +236,16 @@ describe('MangabakaProvider', () => {
 
     it('passes signal to client', async () => {
       const controller = new AbortController();
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+
+      await provider.search({ title: 'DICE', signal: controller.signal });
+
+      expect(client.search).toHaveBeenCalledWith('DICE', 10, controller.signal);
+    });
+
+    it('passes signal to match on fallback', async () => {
+      const controller = new AbortController();
+      vi.mocked(client.search).mockResolvedValue([]);
       vi.mocked(client.match).mockResolvedValue([mockSeries]);
 
       await provider.search({ title: 'DICE', signal: controller.signal });

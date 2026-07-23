@@ -37,6 +37,15 @@ export class MangabakaClient {
     return envelope?.data ?? [];
   }
 
+  async search(query: string, limit: number, signal?: AbortSignal): Promise<MangabakaSeries[]> {
+    const params = new URLSearchParams({
+      q: query,
+      limit: String(limit),
+    });
+    const envelope = await this.get<MangabakaEnvelope<MangabakaSeries[]>>('search', `/v1/series/search?${params.toString()}`, signal);
+    return envelope?.data ?? [];
+  }
+
   async fetchSeries(id: number, signal?: AbortSignal): Promise<MangabakaSeries | null> {
     const envelope = await this.get<MangabakaEnvelope<MangabakaSeries>>('fetchSeries', `/v1/series/${id}`, signal);
     if (!envelope?.data) return null;

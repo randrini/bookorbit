@@ -112,6 +112,72 @@ describe('MangabakaClient', () => {
     });
   });
 
+  describe('search()', () => {
+    it('returns array of series on success', async () => {
+      const mockSeries = [
+        { id: 1, title: 'NARUTO', state: 'active', merged_with: null, native_title: 'NARUTO―ナルト―', romanized_title: 'Naruto' },
+        { id: 2, title: 'Boruto', state: 'active', merged_with: null, native_title: 'ボルト', romanized_title: 'Boruto' },
+      ];
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: mockSeries }),
+      } as Response);
+
+      const result = await client.search('naruto', 5);
+      expect(result).toEqual(mockSeries);
+    });
+
+    it('builds query parameters correctly', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: [] }),
+      } as Response);
+
+      await client.search('one piece', 5);
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/v1/series/search?'), expect.any(Object));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('q=one'), expect.any(Object));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('limit=5'), expect.any(Object));
+    });
+
+    it('returns empty array when response is not ok', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 503,
+      } as Response);
+
+      const result = await client.search('query', 5);
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when fetch throws a generic error', async () => {
+      mockFetch.mockRejectedValue(new Error('network failure'));
+
+      const result = await client.search('query', 5);
+      expect(result).toEqual([]);
+    });
+
+    it('rethrows ProviderThrottleError', async () => {
+      mockFetch.mockRejectedValue(new ProviderThrottleError(1000));
+
+      await expect(client.search('query', 5)).rejects.toThrow(ProviderThrottleError);
+    });
+
+    it('returns empty array when data field is missing', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200 }),
+      } as Response);
+
+      const result = await client.search('query', 5);
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('fetchSeries()', () => {
     it('returns series response on success', async () => {
       const mockSeries = {
