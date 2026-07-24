@@ -86,14 +86,17 @@ function resolveSourceUrl(series: MangabakaSeries): string {
   return `${MANGABAKA_BASE_URL}/${series.id}`;
 }
 
+// MangaBaka works represent volumes (Series -> Volume -> Chapter).
+// A work's sequence_numeric is the volume number, not an issue number.
+// comicMetadata maps the Volume level: volumeName from sub_title, pencillers from artists.
+// issueNumber is intentionally NOT set because manga volumes are the leaf unit,
+// not issues within a volume.
 function resolveComicMetadata(series: MangabakaSeries, work?: MangabakaWork): ComicMetadataFields | undefined {
   const pencillers = series.artists?.length ? series.artists : undefined;
-  const issueNumber = work ? String(work.sequence_numeric) : undefined;
   const volumeName = work?.sub_title ?? undefined;
 
   const comicMetadata: ComicMetadataFields = {};
   if (pencillers) comicMetadata.pencillers = pencillers;
-  if (issueNumber) comicMetadata.issueNumber = issueNumber;
   if (volumeName) comicMetadata.volumeName = volumeName;
 
   return Object.keys(comicMetadata).length > 0 ? comicMetadata : undefined;

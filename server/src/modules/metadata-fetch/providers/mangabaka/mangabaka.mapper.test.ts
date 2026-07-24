@@ -606,9 +606,9 @@ describe('mapMangabakaWork', () => {
     expect(result?.comicMetadata?.pencillers).toEqual(['Hyun-Seok Yun']);
   });
 
-  it('populates comicMetadata.issueNumber from work.sequence_numeric', () => {
+  it('does not populate comicMetadata.issueNumber (manga volumes are leaf units)', () => {
     const result = mapMangabakaWork(mockWork, baseSeries);
-    expect(result?.comicMetadata?.issueNumber).toBe('1');
+    expect(result?.comicMetadata?.issueNumber).toBeUndefined();
   });
 
   it('populates comicMetadata.volumeName from work.sub_title', () => {
