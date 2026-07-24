@@ -804,7 +804,7 @@ describe('MangabakaProvider', () => {
       const result = await provider.lookupById(validUuid);
       expect(result).not.toBeNull();
       expect(result?.providerId).toBe(validUuid);
-      expect(result?.title).toBe('DICE');
+      expect(result?.title).toBe('DICE - Vol 1');
     });
 
     it('calls fetchWork with correct UUID', async () => {

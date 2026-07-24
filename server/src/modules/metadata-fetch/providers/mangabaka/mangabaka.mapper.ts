@@ -151,7 +151,18 @@ export function pickBestCollection(collections: MangabakaCollection[], preferred
   return scored[0].collection;
 }
 
-export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): MetadataCandidate | null {
+function formatWorkTitle(seriesTitle: string, volumeNumber: number | undefined, chapterNumber?: number): string {
+  let title = seriesTitle;
+  if (volumeNumber !== undefined) {
+    title += ` - Vol ${volumeNumber}`;
+  }
+  if (chapterNumber !== undefined) {
+    title += ` - Ch ${chapterNumber}`;
+  }
+  return title;
+}
+
+export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries, chapterNumber?: number): MetadataCandidate | null {
   if (!work?.id) return null;
 
   const communityRating = normalizeCommunityRating(series.rating);
@@ -192,7 +203,7 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
   return {
     provider: MetadataProviderKey.MANGABAKA,
     providerId: work.id,
-    title: resolveTitle(series),
+    title: formatWorkTitle(resolveTitle(series), work.sequence_numeric, chapterNumber),
     subtitle: work.sub_title ?? undefined,
     authors: resolveAuthors(series),
     description: work.description?.desc?.trim() || undefined,

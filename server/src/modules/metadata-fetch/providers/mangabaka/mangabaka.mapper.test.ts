@@ -476,7 +476,7 @@ describe('mapMangabakaWork', () => {
     expect(result).not.toBeNull();
     expect(result?.provider).toBe(MetadataProviderKey.MANGABAKA);
     expect(result?.providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
-    expect(result?.title).toBe('DICE');
+    expect(result?.title).toBe('DICE - Vol 1');
     expect(result?.subtitle).toBe('The Evil Spirit');
     expect(result?.authors).toEqual(['Hyun-Seok Yun']);
     expect(result?.description).toBe('The first volume of Naruto.');
@@ -619,6 +619,21 @@ describe('mapMangabakaWork', () => {
   it('populates seriesMemberships with series name and work sequence', () => {
     const result = mapMangabakaWork(mockWork, baseSeries);
     expect(result?.seriesMemberships).toEqual([{ seriesName: 'DICE', seriesIndex: 1 }]);
+  });
+
+  it('formats title with volume and chapter when chapterNumber is provided', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries, 3);
+    expect(result?.title).toBe('DICE - Vol 1 - Ch 3');
+  });
+
+  it('formats title with volume only when chapterNumber is undefined', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries);
+    expect(result?.title).toBe('DICE - Vol 1');
+  });
+
+  it('formats title with volume only when chapterNumber is explicitly undefined', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries, undefined);
+    expect(result?.title).toBe('DICE - Vol 1');
   });
 });
 

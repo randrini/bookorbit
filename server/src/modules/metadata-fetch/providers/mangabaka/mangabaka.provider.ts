@@ -10,7 +10,7 @@ import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
 import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
-import { detectLanguageHint, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
+import { detectLanguageHint, extractChapterNumber, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
@@ -38,6 +38,7 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     const cleanTitle = params.title ? stripVolumeMarker(params.title) : undefined;
     const volumeNumber = params.title ? extractVolumeNumber(params.title) : undefined;
+    const chapterNumber = params.title ? extractChapterNumber(params.title) : undefined;
     // Search by title only - the API matches better on clean titles.
     // Author is used for candidate ranking by the pipeline, not for the search query.
     const query = cleanTitle ?? params.author ?? '';
@@ -69,7 +70,7 @@ export class MangabakaProvider implements IdentifiableProvider {
             const works = await this.client.fetchWorks(bestCollection.id, params.signal, volumeNumber);
             const matchingWork = works.find((w) => w.sequence_numeric === volumeNumber && w.count_type === 'main');
             if (matchingWork) {
-              const candidate = mapMangabakaWork(matchingWork, candidateSeries);
+              const candidate = mapMangabakaWork(matchingWork, candidateSeries, chapterNumber);
               if (candidate) {
                 this.logger.log(
                   `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=1 - search completed (volume match on series ${candidateSeries.id})`,
