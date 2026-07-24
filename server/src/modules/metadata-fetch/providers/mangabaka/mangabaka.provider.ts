@@ -67,7 +67,9 @@ export class MangabakaProvider implements IdentifiableProvider {
         }
       } catch (err) {
         if (err instanceof ProviderThrottleError) throw err;
-        // Otherwise fall through to series-level candidates
+        this.logger.warn(
+          `[MangaBaka.search] [fail] volumeNumber=${volumeNumber} errorClass=${err instanceof Error ? err.constructor.name : 'Unknown'} error="${sanitizeLogValue(err instanceof Error ? err.message : String(err))}" - volume resolution failed, falling back to series candidates`,
+        );
       }
     }
 
@@ -84,19 +86,41 @@ export class MangabakaProvider implements IdentifiableProvider {
     const { enabled } = await this.providerConfig.getConfig().then((c) => c.mangabaka);
     if (!enabled) return null;
 
-    if (!UUID_RE.test(providerId)) {
-      this.logger.warn(
-        `[MangaBaka.lookupById] [fail] providerId="${sanitizeLogValue(providerId)}" errorClass=ValidationError error="invalid uuid format"`,
-      );
-      return null;
+    const startedAt = Date.now();
+
+    if (UUID_RE.test(providerId)) {
+      this.logger.log(`[MangaBaka.lookupById] [start] providerId="${sanitizeLogValue(providerId)}" mode=work - lookup started`);
+      const work = await this.client.fetchWork(providerId, signal);
+      if (!work) {
+        this.logger.log(`[MangaBaka.lookupById] [end] durationMs=${Date.now() - startedAt} found=false - lookup completed (work not found)`);
+        return null;
+      }
+      const series = await this.client.fetchSeries(work.series_id, signal);
+      if (!series) {
+        this.logger.log(`[MangaBaka.lookupById] [end] durationMs=${Date.now() - startedAt} found=false - lookup completed (series not found)`);
+        return null;
+      }
+      const candidate = mapMangabakaWork(work, series);
+      this.logger.log(`[MangaBaka.lookupById] [end] durationMs=${Date.now() - startedAt} found=${candidate !== null} - lookup completed (work)`);
+      return candidate;
     }
 
-    const work = await this.client.fetchWork(providerId, signal);
-    if (!work) return null;
+    // Fallback: treat as a numeric series ID for backwards compatibility.
+    if (/^\d+$/.test(providerId) && Number.isSafeInteger(Number(providerId))) {
+      this.logger.log(`[MangaBaka.lookupById] [start] providerId="${sanitizeLogValue(providerId)}" mode=series - lookup started`);
+      const series = await this.client.fetchSeries(Number(providerId), signal);
+      if (!series) {
+        this.logger.log(`[MangaBaka.lookupById] [end] durationMs=${Date.now() - startedAt} found=false - lookup completed (series not found)`);
+        return null;
+      }
+      const candidate = mapMangabakaSeries(series);
+      this.logger.log(`[MangaBaka.lookupById] [end] durationMs=${Date.now() - startedAt} found=${candidate !== null} - lookup completed (series)`);
+      return candidate;
+    }
 
-    const series = await this.client.fetchSeries(work.series_id, signal);
-    if (!series) return null;
-
-    return mapMangabakaWork(work, series);
+    this.logger.warn(
+      `[MangaBaka.lookupById] [fail] providerId="${sanitizeLogValue(providerId)}" errorClass=ValidationError error="invalid id format" - lookup failed`,
+    );
+    return null;
   }
 }

@@ -50,7 +50,7 @@ describe('stripVolumeMarker', () => {
   });
 
   describe('preserves titles without trailing volume markers', () => {
-    const cases = [
+    const cases: Array<string | [string, string]> = [
       'Death Note',
       'V for Vendetta',
       'Vampire Knight',
@@ -60,11 +60,14 @@ describe('stripVolumeMarker', () => {
       'Vinland Saga',
       'Vol 7 Complex',
       'T09 Chronicles',
+      ['123 45', '123 45'],
     ];
 
-    for (const input of cases) {
+    for (const entry of cases) {
+      const input = Array.isArray(entry) ? entry[0] : entry;
+      const expected = Array.isArray(entry) ? entry[1] : entry;
       it(`preserves "${input}"`, () => {
-        expect(stripVolumeMarker(input)).toBe(input);
+        expect(stripVolumeMarker(input)).toBe(expected);
       });
     }
   });

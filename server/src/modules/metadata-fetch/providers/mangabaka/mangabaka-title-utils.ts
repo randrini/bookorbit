@@ -1,18 +1,6 @@
-// Cleans a raw book filename/title for metadata searches.
-//
-// Handles two kinds of noise that manga/comic filenames commonly carry:
-//
-// 1. Bracketed metadata blocks, e.g.:
-//    "Fairy Tail 13 [Hiro Mashima] [Manga FR] [Digital-1246]"
-//    -> "Fairy Tail 13"
-//
-// 2. Trailing volume/tome/issue markers, e.g.:
-//    "Death Note T09"        -> "Death Note"
-//    "Death Note Vol. 9"     -> "Death Note"
-//    "Fairy Tail 13"         -> "Fairy Tail"   (bare trailing number)
-//
-// The marker must appear at the end of the string (after optional whitespace)
-// so legitimate titles containing "v" mid-string are preserved.
+// Title-cleaning utilities for MangaBaka metadata searches.
+// Volume markers must appear at the end of the string so legitimate titles
+// containing "v" or "t" mid-string are preserved.
 
 // Matches a trailing volume marker with an explicit prefix (T, Vol, v, issue, ch...).
 const VOLUME_MARKER_RE = /\s+(?:t(?:ome)?|vol(?:ume)?|v|issue|ch(?:apter)?)\.?\s*\d+\s*$/i;
@@ -37,7 +25,14 @@ export function stripVolumeMarker(title: string): string {
   const stripped = noBrackets.replace(VOLUME_MARKER_RE, '').trim();
   if (stripped !== noBrackets) return stripped;
   // Only strip a bare trailing number if there is a word before it.
-  return noBrackets.replace(/\s+\d+\s*$/, '').trim();
+  const bareMatch = noBrackets.match(/\s+(\d+)\s*$/);
+  if (bareMatch) {
+    const before = noBrackets.slice(0, bareMatch.index).trim();
+    if (before.length > 0 && /\p{L}/u.test(before)) {
+      return before;
+    }
+  }
+  return noBrackets.trim();
 }
 
 // Extracts a trailing volume number from a book title.

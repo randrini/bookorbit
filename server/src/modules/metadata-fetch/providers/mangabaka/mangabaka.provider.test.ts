@@ -459,16 +459,29 @@ describe('MangabakaProvider', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null for non-UUID ID', async () => {
+    it('returns null for non-UUID non-numeric ID', async () => {
       const result = await provider.lookupById('abc');
       expect(result).toBeNull();
       expect(client.fetchWork).not.toHaveBeenCalled();
+      expect(client.fetchSeries).not.toHaveBeenCalled();
     });
 
-    it('returns null for numeric ID (old format)', async () => {
+    it('treats numeric ID as series ID and returns mapped candidate', async () => {
+      vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
+
+      const result = await provider.lookupById('123');
+      expect(result).not.toBeNull();
+      expect(result?.providerId).toBe('1');
+      expect(client.fetchSeries).toHaveBeenCalledWith(123, undefined);
+      expect(client.fetchWork).not.toHaveBeenCalled();
+    });
+
+    it('returns null for numeric ID when fetchSeries returns null', async () => {
+      vi.mocked(client.fetchSeries).mockResolvedValue(null);
+
       const result = await provider.lookupById('123');
       expect(result).toBeNull();
-      expect(client.fetchWork).not.toHaveBeenCalled();
+      expect(client.fetchSeries).toHaveBeenCalledWith(123, undefined);
     });
 
     it('accepts UUID without hyphens', async () => {

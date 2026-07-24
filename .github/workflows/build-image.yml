@@ -44,16 +44,32 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check if image already exists
+        id: check-existing
+        if: github.event_name == 'push'
+        run: |
+          if [ "${{ inputs.force_rebuild }}" = "true" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Image already exists for this SHA, skipping build"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract metadata
         id: meta
+        if: steps.check-existing.outputs.skip != 'true'
         uses: docker/metadata-action@902fa8ec7d6ecbf8c5024e7c8240847e41a03465 # v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix=sha-
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long,prefix=sha-
 
       - name: Build and push image
+        if: steps.check-existing.outputs.skip != 'true'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
@@ -67,6 +83,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=container-image
 
       - name: Scan image with Trivy
+        if: steps.check-existing.outputs.skip != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
@@ -75,3 +92,10 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "1"
+
+      - name: Tag as main
+        if: github.ref == 'refs/heads/main' && steps.check-existing.outputs.skip != 'true'
+        run: |
+          docker buildx imagetools create \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
