@@ -345,10 +345,14 @@ describe('mapMangabakaSeries', () => {
     expect(result?.communityRatingCount).toBe(794);
   });
 
-  it('returns undefined communityRatingCount when popularity is null', () => {
-    const series: MangabakaSeries = { ...baseSeries, popularity: null };
-    const result = mapMangabakaSeries(series);
-    expect(result?.communityRatingCount).toBeUndefined();
+  it('populates comicMetadata.pencillers from series.artists', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.comicMetadata?.pencillers).toEqual(['Hyun-Seok Yun']);
+  });
+
+  it('does not populate seriesMemberships for series-level candidates', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.seriesMemberships).toBeUndefined();
   });
 });
 
@@ -595,5 +599,44 @@ describe('mapMangabakaWork', () => {
     };
     const result = mapMangabakaWork(work, baseSeries);
     expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x350/work');
+  });
+
+  it('populates comicMetadata.pencillers from series.artists', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries);
+    expect(result?.comicMetadata?.pencillers).toEqual(['Hyun-Seok Yun']);
+  });
+
+  it('populates comicMetadata.issueNumber from work.sequence_numeric', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries);
+    expect(result?.comicMetadata?.issueNumber).toBe('1');
+  });
+
+  it('populates comicMetadata.volumeName from work.sub_title', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries);
+    expect(result?.comicMetadata?.volumeName).toBe('The Evil Spirit');
+  });
+
+  it('populates seriesMemberships with series name and work sequence', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries);
+    expect(result?.seriesMemberships).toEqual([{ seriesName: 'DICE', seriesIndex: 1 }]);
+  });
+});
+
+describe('pickBestCollection with preferredLanguage', () => {
+  const englishCollection = { ...mockCollection, id: 'col-en' };
+  const frenchCollection: MangabakaCollection = {
+    ...mockCollection,
+    id: 'col-fr',
+    language: { iso: 'fr', language: 'French' },
+  };
+
+  it('prefers French collection when preferredLanguage is fr', () => {
+    const result = pickBestCollection([englishCollection, frenchCollection], 'fr');
+    expect(result?.id).toBe('col-fr');
+  });
+
+  it('prefers English collection when no preferredLanguage (default)', () => {
+    const result = pickBestCollection([frenchCollection, englishCollection]);
+    expect(result?.id).toBe('col-en');
   });
 });

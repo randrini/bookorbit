@@ -160,12 +160,12 @@ describe('MangabakaProvider', () => {
       expect(result[0].providerId).toBe('1');
     });
 
-    it('combines title and author in query', async () => {
+    it('searches by title only when both title and author provided', async () => {
       vi.mocked(client.search).mockResolvedValue([]);
 
       await provider.search({ title: 'DICE', author: 'Yun' });
 
-      expect(client.search).toHaveBeenCalledWith('DICE Yun', 10, undefined);
+      expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
     });
 
     it('uses author alone when no title provided', async () => {
@@ -221,12 +221,12 @@ describe('MangabakaProvider', () => {
       expect(client.search).toHaveBeenCalledWith('Death Note', 10, undefined);
     });
 
-    it('strips volume markers and combines with author', async () => {
+    it('strips volume markers and does not include author in query', async () => {
       vi.mocked(client.search).mockResolvedValue([]);
 
       await provider.search({ title: 'Death Note Vol. 9', author: 'Ohba' });
 
-      expect(client.search).toHaveBeenCalledWith('Death Note Ohba', 10, undefined);
+      expect(client.search).toHaveBeenCalledWith('Death Note', 10, undefined);
     });
 
     it('skips series where mapper returns null (id=0)', async () => {
@@ -570,6 +570,66 @@ describe('MangabakaProvider', () => {
       vi.mocked(client.fetchCollections).mockRejectedValue(new ProviderThrottleError(5000));
 
       await expect(provider.search({ title: 'DICE T01' })).rejects.toThrow(ProviderThrottleError);
+    });
+
+    it('passes language hint from [Manga FR] to pickBestCollection', async () => {
+      const mockCollection: MangabakaCollection = {
+        id: 'col-1',
+        series_id: 1,
+        title: 'DICE Vol. 1',
+        language: { iso: 'en', language: 'English' },
+        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
+        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
+        type: 'volume',
+        format: 'paged',
+        medium: 'digital',
+        status: 'published',
+        reading: 'rtl',
+        licensed: true,
+        description: { desc: '', source: 'mangabaka' },
+        note: null,
+        start_date: null,
+        end_date: null,
+        links: [],
+        related_collection_id: null,
+        count_main: 10,
+        count_extra: 0,
+        count_other: 0,
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      const mockWork: MangabakaWork = {
+        id: '019e1d69-4210-767b-acd5-1de151bd138b',
+        series_id: 1,
+        source_ids: [],
+        sub_title: null,
+        count_type: 'main',
+        images: [],
+        release_date: null,
+        sequence_string: '1',
+        sequence_numeric: 1,
+        identifiers: [],
+        trim: null,
+        description: null,
+        note: null,
+        pages: null,
+        price: null,
+        links: [],
+        inc_chapters: null,
+        part_of_volume: null,
+        revision: null,
+        updated_at: '2024-01-01T00:00:00Z',
+        collections: [mockCollection],
+      };
+
+      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
+      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
+
+      const result = await provider.search({ title: 'DICE T01 [Manga FR]' });
+
+      expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(result).toHaveLength(1);
+      expect(result[0].providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
     });
 
     it('re-throws ProviderThrottleError from fetchWorks during volume resolution', async () => {

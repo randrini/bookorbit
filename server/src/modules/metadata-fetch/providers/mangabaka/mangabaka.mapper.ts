@@ -1,4 +1,4 @@
-import { MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
+import { ComicMetadataFields, MetadataCandidate, MetadataProviderKey, MetadataSeriesMembership } from '@bookorbit/types';
 
 import { MangabakaCollection, MangabakaSeries, MangabakaWork } from './mangabaka.types';
 
@@ -86,12 +86,27 @@ function resolveSourceUrl(series: MangabakaSeries): string {
   return `${MANGABAKA_BASE_URL}/${series.id}`;
 }
 
+function resolveComicMetadata(series: MangabakaSeries, work?: MangabakaWork): ComicMetadataFields | undefined {
+  const pencillers = series.artists?.length ? series.artists : undefined;
+  const issueNumber = work ? String(work.sequence_numeric) : undefined;
+  const volumeName = work?.sub_title ?? undefined;
+
+  const comicMetadata: ComicMetadataFields = {};
+  if (pencillers) comicMetadata.pencillers = pencillers;
+  if (issueNumber) comicMetadata.issueNumber = issueNumber;
+  if (volumeName) comicMetadata.volumeName = volumeName;
+
+  return Object.keys(comicMetadata).length > 0 ? comicMetadata : undefined;
+}
+
 export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate | null {
   if (!series?.id) return null;
   if (series.merged_with !== null) return null;
 
   const communityRating = normalizeCommunityRating(series.rating);
   const communityRatingCount = series.popularity?.global?.current;
+
+  const comicMetadata = resolveComicMetadata(series);
 
   return {
     provider: MetadataProviderKey.MANGABAKA,
@@ -108,6 +123,7 @@ export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate |
     sourceUrl: resolveSourceUrl(series),
     seriesName: undefined,
     seriesIndex: undefined,
+    ...(comicMetadata ? { comicMetadata } : {}),
     ...(communityRating !== undefined ? { communityRating } : {}),
     ...(communityRatingCount !== undefined ? { communityRatingCount } : {}),
   };
@@ -116,13 +132,13 @@ export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate |
 // Pick the best collection for volume matching.
 // Prefers: type "volume", English language, digital medium (complete covers),
 // then most works (count_main, capped at 50).
-export function pickBestCollection(collections: MangabakaCollection[]): MangabakaCollection | null {
+export function pickBestCollection(collections: MangabakaCollection[], preferredLanguage?: string): MangabakaCollection | null {
   if (collections.length === 0) return null;
 
   const scored = collections.map((c) => {
     let score = 0;
     if (c.type === 'volume') score += 100;
-    if (c.language?.iso === 'en') score += 50;
+    if (c.language?.iso === (preferredLanguage ?? 'en')) score += 50;
     if (c.medium === 'digital') score += 40;
     score += Math.min(c.count_main, 50);
     return { collection: c, score };
@@ -166,6 +182,10 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
     publishedYear = resolvePublishedYear(series);
   }
 
+  const comicMetadata = resolveComicMetadata(series, work);
+  const seriesName = resolveTitle(series);
+  const seriesMemberships: MetadataSeriesMembership[] | undefined = seriesName ? [{ seriesName, seriesIndex: work.sequence_numeric }] : undefined;
+
   return {
     provider: MetadataProviderKey.MANGABAKA,
     providerId: work.id,
@@ -182,6 +202,8 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
     ...(isbn10 ? { isbn10 } : {}),
     seriesName: resolveTitle(series),
     seriesIndex: work.sequence_numeric,
+    ...(comicMetadata ? { comicMetadata } : {}),
+    ...(seriesMemberships ? { seriesMemberships } : {}),
     genres: resolveGenres(series),
     coverUrl,
     sourceUrl: `https://mangabaka.org/work/${work.id}`,

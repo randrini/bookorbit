@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
+import { detectLanguageHint, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 describe('stripVolumeMarker', () => {
   describe('strips trailing volume markers', () => {
@@ -123,6 +123,40 @@ describe('extractVolumeNumber', () => {
     const label = expected !== undefined ? `extracts ${expected} from "${input}"` : `returns undefined for "${input}"`;
     it(label, () => {
       expect(extractVolumeNumber(input)).toBe(expected);
+    });
+  }
+});
+
+describe('detectLanguageHint', () => {
+  const cases: Array<[string, string | undefined]> = [
+    ['[Manga FR]', 'fr'],
+    ['[Manga EN]', 'en'],
+    ['[Manga ES]', 'es'],
+    ['[Anime JP]', 'jp'],
+    ['[Scan IT]', 'it'],
+    ['Fairy Tail 13', undefined],
+    ['[Digital-1246]', undefined],
+    ['Fairy Tail 13 [Manga FR] [Digital-1246]', 'fr'],
+  ];
+
+  for (const [input, expected] of cases) {
+    const label = expected !== undefined ? `detects "${expected}" from "${input}"` : `returns undefined for "${input}"`;
+    it(label, () => {
+      expect(detectLanguageHint(input)).toBe(expected);
+    });
+  }
+});
+
+describe('stripVolumeMarker with non-Latin brackets', () => {
+  const cases: Array<[string, string]> = [
+    ['Naruto 《13》', 'Naruto'],
+    ['Fairy Tail 【13】', 'Fairy Tail'],
+    ['Naruto 《13》 [Manga JP]', 'Naruto'],
+  ];
+
+  for (const [input, expected] of cases) {
+    it(`strips "${input}" -> "${expected}"`, () => {
+      expect(stripVolumeMarker(input)).toBe(expected);
     });
   }
 });

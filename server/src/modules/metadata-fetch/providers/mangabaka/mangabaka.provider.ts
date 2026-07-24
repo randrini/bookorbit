@@ -10,7 +10,7 @@ import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
 import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
-import { extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
+import { detectLanguageHint, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
@@ -38,10 +38,13 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     const cleanTitle = params.title ? stripVolumeMarker(params.title) : undefined;
     const volumeNumber = params.title ? extractVolumeNumber(params.title) : undefined;
-    const query = params.author ? `${cleanTitle ?? ''} ${params.author}`.trim() : (cleanTitle ?? '');
+    // Search by title only - the API matches better on clean titles.
+    // Author is used for candidate ranking by the pipeline, not for the search query.
+    const query = cleanTitle ?? params.author ?? '';
 
     if (!query) return [];
 
+    const languageHint = params.title ? detectLanguageHint(params.title) : undefined;
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
 
     const startedAt = Date.now();
@@ -61,7 +64,7 @@ export class MangabakaProvider implements IdentifiableProvider {
         const candidateSeries = series[i];
         try {
           const collections = await this.client.fetchCollections(candidateSeries.id, params.signal);
-          const bestCollection = pickBestCollection(collections);
+          const bestCollection = pickBestCollection(collections, languageHint);
           if (bestCollection) {
             const works = await this.client.fetchWorks(bestCollection.id, params.signal, volumeNumber);
             const matchingWork = works.find((w) => w.sequence_numeric === volumeNumber && w.count_type === 'main');

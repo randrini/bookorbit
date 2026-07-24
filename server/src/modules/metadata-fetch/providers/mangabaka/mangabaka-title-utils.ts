@@ -25,9 +25,22 @@ function stripBrackets(title: string): string {
     result = result
       .replace(/\s*\[[^\][]*\]/g, '')
       .replace(/\s*\([^()]*\)/g, '')
+      .replace(/\s*《[^《》]*》/g, '')
+      .replace(/\s*【[^【】]*】/g, '')
       .trim();
   } while (result !== prev);
   return result;
+}
+
+// Detects language hints from bracketed metadata in filenames.
+// "[Manga FR]" -> "fr", "[Manga EN]" -> "en", "[Manga ES]" -> "es"
+// Returns undefined when no language hint is found.
+const LANG_HINT_RE = /\[(?:manga|anime|scan)\s+([a-z]{2})\]/i;
+
+export function detectLanguageHint(title: string): string | undefined {
+  const match = title.match(LANG_HINT_RE);
+  if (!match) return undefined;
+  return match[1].toLowerCase();
 }
 
 function stripTrailingYear(title: string): string {
