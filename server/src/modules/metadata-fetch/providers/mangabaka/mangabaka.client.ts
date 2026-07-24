@@ -10,6 +10,8 @@ import { MangabakaCollection, MangabakaEnvelope, MangabakaPagination, MangabakaS
 const BASE_URL = 'https://api.mangabaka.org';
 const USER_AGENT = 'bookorbit/1.0 (+https://github.com/bookorbit/bookorbit)';
 
+const COLLECTIONS_CACHE_TTL_MS = 10 * 60 * 1000;
+
 class RateLimiter {
   private nextAllowedTime = 0;
 
@@ -28,6 +30,7 @@ class RateLimiter {
 export class MangabakaClient {
   private readonly logger = new Logger(MangabakaClient.name);
   private readonly rateLimiter = new RateLimiter();
+  private readonly collectionsCache = new Map<number, { collections: MangabakaCollection[]; expiresAt: number }>();
 
   async match(query: string, limit: number, signal?: AbortSignal): Promise<MangabakaSeries[]> {
     const params = new URLSearchParams({
@@ -54,8 +57,15 @@ export class MangabakaClient {
   }
 
   async fetchCollections(seriesId: number, signal?: AbortSignal): Promise<MangabakaCollection[]> {
+    const cached = this.collectionsCache.get(seriesId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.collections;
+    }
+
     const envelope = await this.get<MangabakaEnvelope<MangabakaCollection[]>>('fetchCollections', `/v1/series/${seriesId}/collections`, signal);
-    return envelope?.data ?? [];
+    const collections = envelope?.data ?? [];
+    this.collectionsCache.set(seriesId, { collections, expiresAt: Date.now() + COLLECTIONS_CACHE_TTL_MS });
+    return collections;
   }
 
   async fetchWorks(collectionId: string, signal?: AbortSignal, targetSequence?: number): Promise<MangabakaWork[]> {

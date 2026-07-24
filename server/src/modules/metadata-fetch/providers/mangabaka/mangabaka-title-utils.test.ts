@@ -23,6 +23,11 @@ describe('stripVolumeMarker', () => {
       ['Fairy Tail 13', 'Fairy Tail'],
       ['Fairy Tail T13', 'Fairy Tail'],
       ['Fairy Tail v13', 'Fairy Tail'],
+      ['Naruto Vol.72 2014', 'Naruto'],
+      ['Naruto 1-5', 'Naruto'],
+      ['Berserk Vol. 42.5', 'Berserk'],
+      ['Naruto 2014', 'Naruto'],
+      ['Berserk 1989', 'Berserk'],
     ];
 
     for (const [input, expected] of cases) {
@@ -40,6 +45,9 @@ describe('stripVolumeMarker', () => {
       ['One Piece [Eiichiro Oda]', 'One Piece'],
       ['Title [Tag1] [Tag2] [Tag3]', 'Title'],
       ['Title [outer [inner]]', 'Title'],
+      ['Fairy Tail 13 (Hiro Mashima) (Manga FR)', 'Fairy Tail'],
+      ['Naruto (Digital)', 'Naruto'],
+      ['Title (Tag1) (Tag2)', 'Title'],
     ];
 
     for (const [input, expected] of cases) {
@@ -96,10 +104,19 @@ describe('extractVolumeNumber', () => {
     ['Fairy Tail T13', 13],
     ['Fairy Tail v13', 13],
     ['Fairy Tail 13 [Hiro Mashima] [Manga FR] [Digital-1246]', 13],
+    ['Naruto Vol.72 2014', 72],
+    ['Naruto 1-5', 1],
+    ['Death Note Vol.1-3', 1],
+    ['Berserk Vol. 42.5', 42],
     ['Death Note', undefined],
     ['Death Note T0', undefined],
     ['13', undefined],
     ['', undefined],
+    ['Naruto 2014', undefined],
+    ['Naruto T2014', undefined],
+    ['Naruto v2014', undefined],
+    ['Berserk 1989', undefined],
+    ['1984', undefined],
   ];
 
   for (const [input, expected] of cases) {

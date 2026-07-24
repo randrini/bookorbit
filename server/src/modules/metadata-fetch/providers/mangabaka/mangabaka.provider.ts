@@ -14,6 +14,9 @@ import { extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils'
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
+// How many top series to try for volume resolution before falling back.
+const VOLUME_RESOLUTION_DEPTH = 3;
+
 @Injectable()
 export class MangabakaProvider implements IdentifiableProvider {
   readonly key = MetadataProviderKey.MANGABAKA;
@@ -36,6 +39,9 @@ export class MangabakaProvider implements IdentifiableProvider {
     const cleanTitle = params.title ? stripVolumeMarker(params.title) : undefined;
     const volumeNumber = params.title ? extractVolumeNumber(params.title) : undefined;
     const query = params.author ? `${cleanTitle ?? ''} ${params.author}`.trim() : (cleanTitle ?? '');
+
+    if (!query) return [];
+
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
 
     const startedAt = Date.now();
@@ -48,28 +54,33 @@ export class MangabakaProvider implements IdentifiableProvider {
       series = await this.client.match(query, maxResults, params.signal);
     }
 
-    // If a volume number was extracted, try to resolve a specific work for the top series.
+    // If a volume number was extracted, try to resolve a specific work for the
+    // top series. Try up to VOLUME_RESOLUTION_DEPTH series before giving up.
     if (volumeNumber !== undefined && series.length > 0) {
-      const topSeries = series[0];
-      try {
-        const collections = await this.client.fetchCollections(topSeries.id, params.signal);
-        const bestCollection = pickBestCollection(collections);
-        if (bestCollection) {
-          const works = await this.client.fetchWorks(bestCollection.id, params.signal, volumeNumber);
-          const matchingWork = works.find((w) => w.sequence_numeric === volumeNumber);
-          if (matchingWork) {
-            const candidate = mapMangabakaWork(matchingWork, topSeries);
-            if (candidate) {
-              this.logger.log(`[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=1 - search completed (volume match)`);
-              return [candidate];
+      for (let i = 0; i < Math.min(VOLUME_RESOLUTION_DEPTH, series.length); i++) {
+        const candidateSeries = series[i];
+        try {
+          const collections = await this.client.fetchCollections(candidateSeries.id, params.signal);
+          const bestCollection = pickBestCollection(collections);
+          if (bestCollection) {
+            const works = await this.client.fetchWorks(bestCollection.id, params.signal, volumeNumber);
+            const matchingWork = works.find((w) => w.sequence_numeric === volumeNumber && w.count_type === 'main');
+            if (matchingWork) {
+              const candidate = mapMangabakaWork(matchingWork, candidateSeries);
+              if (candidate) {
+                this.logger.log(
+                  `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=1 - search completed (volume match on series ${candidateSeries.id})`,
+                );
+                return [candidate];
+              }
             }
           }
+        } catch (err) {
+          if (err instanceof ProviderThrottleError) throw err;
+          this.logger.warn(
+            `[MangaBaka.search] [fail] seriesId=${candidateSeries.id} volumeNumber=${volumeNumber} errorClass=${err instanceof Error ? err.constructor.name : 'Unknown'} error="${sanitizeLogValue(err instanceof Error ? err.message : String(err))}" - volume resolution failed for this series, trying next`,
+          );
         }
-      } catch (err) {
-        if (err instanceof ProviderThrottleError) throw err;
-        this.logger.warn(
-          `[MangaBaka.search] [fail] volumeNumber=${volumeNumber} errorClass=${err instanceof Error ? err.constructor.name : 'Unknown'} error="${sanitizeLogValue(err instanceof Error ? err.message : String(err))}" - volume resolution failed, falling back to series candidates`,
-        );
       }
     }
 
