@@ -66,9 +66,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,format=long,prefix=sha-
+            type=raw,value=pending-${{ github.sha }}
 
-      - name: Build and push image
+      - name: Build and push to pending tag
         if: steps.check-existing.outputs.skip != 'true'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -83,19 +83,29 @@ jobs:
           cache-to: type=gha,mode=max,scope=container-image
 
       - name: Scan image with Trivy
+        id: scan
         if: steps.check-existing.outputs.skip != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pending-${{ github.sha }}
           format: table
           vuln-type: os,library
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "1"
 
-      - name: Tag as main
+      - name: Promote to SHA and main tags
         if: github.ref == 'refs/heads/main' && steps.check-existing.outputs.skip != 'true'
         run: |
           docker buildx imagetools create \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pending-${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          docker buildx imagetools create \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pending-${{ github.sha }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+
+      - name: Remove pending tag
+        if: always() && steps.check-existing.outputs.skip != 'true'
+        run: |
+          docker buildx imagetools rm \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pending-${{ github.sha }} 2>/dev/null || true
