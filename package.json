@@ -94,7 +94,8 @@
       "piscina": "^4.9.3",
       "qs": "^6.15.2",
       "ws": "^8.21.0",
-      "find-my-way": "^9.7.0"
+      "find-my-way": "^9.7.0",
+      "@fastify/static": "^10.1.1"
     },
     "packageExtensions": {
       "@embedpdf/utils@2.14.4": {
