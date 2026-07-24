@@ -16,6 +16,9 @@ function resolveSubtitle(series: MangabakaSeries): string | undefined {
   if (series.native_title && series.native_title !== mainTitle) {
     return series.native_title;
   }
+  if (series.romanized_title && series.romanized_title !== mainTitle) {
+    return series.romanized_title;
+  }
   return undefined;
 }
 
@@ -60,7 +63,7 @@ function resolveGenres(series: MangabakaSeries): string[] | undefined {
 
 function resolveCoverUrl(series: MangabakaSeries): string | undefined {
   if (!series.cover) return undefined;
-  return series.cover.x250?.x1 ?? series.cover.raw?.url;
+  return series.cover.x250?.x1 ?? series.cover.x350?.x1 ?? series.cover.x150?.x1 ?? series.cover.raw?.url;
 }
 
 function resolveDescription(series: MangabakaSeries): string | undefined {
@@ -83,17 +86,12 @@ function resolveSourceUrl(series: MangabakaSeries): string {
   return `${MANGABAKA_BASE_URL}/${series.id}`;
 }
 
-function resolveSeriesIndex(series: MangabakaSeries): number | undefined {
-  if (!series.relationships_v2?.length) return undefined;
-  const parentRel = series.relationships_v2.find((r) => r.relation_type === 'parent' || r.relation_type === 'series');
-  if (!parentRel) return undefined;
-  return undefined;
-}
-
 export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate | null {
   if (!series?.id) return null;
+  if (series.merged_with !== null) return null;
 
   const communityRating = normalizeCommunityRating(series.rating);
+  const communityRatingCount = series.popularity?.global?.current;
 
   return {
     provider: MetadataProviderKey.MANGABAKA,
@@ -109,14 +107,15 @@ export function mapMangabakaSeries(series: MangabakaSeries): MetadataCandidate |
     coverUrl: resolveCoverUrl(series),
     sourceUrl: resolveSourceUrl(series),
     seriesName: undefined,
-    seriesIndex: resolveSeriesIndex(series),
+    seriesIndex: undefined,
     ...(communityRating !== undefined ? { communityRating } : {}),
+    ...(communityRatingCount !== undefined ? { communityRatingCount } : {}),
   };
 }
 
 // Pick the best collection for volume matching.
 // Prefers: type "volume", English language, digital medium (complete covers),
-// then most works (count_main).
+// then most works (count_main, capped at 50).
 export function pickBestCollection(collections: MangabakaCollection[]): MangabakaCollection | null {
   if (collections.length === 0) return null;
 
@@ -125,7 +124,7 @@ export function pickBestCollection(collections: MangabakaCollection[]): Mangabak
     if (c.type === 'volume') score += 100;
     if (c.language?.iso === 'en') score += 50;
     if (c.medium === 'digital') score += 40;
-    score += c.count_main;
+    score += Math.min(c.count_main, 50);
     return { collection: c, score };
   });
 
@@ -137,6 +136,7 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
   if (!work?.id) return null;
 
   const communityRating = normalizeCommunityRating(series.rating);
+  const communityRatingCount = series.popularity?.global?.current;
   const bestCollection = work.collections?.length ? pickBestCollection(work.collections) : null;
 
   let isbn10: string | undefined;
@@ -144,7 +144,7 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
   for (const ident of work.identifiers ?? []) {
     if (ident.name === 'isbn') {
       const clean = ident.id.replace(/[-\s]/g, '');
-      if (clean.length === 13 && clean.startsWith('978')) {
+      if (clean.length === 13) {
         isbn13 = clean;
       } else if (clean.length === 10) {
         isbn10 = clean;
@@ -152,7 +152,8 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
     }
   }
 
-  const coverUrl = work.images?.[0]?.image?.x250?.x1 ?? work.images?.[0]?.image?.raw?.url;
+  const img = work.images?.[0]?.image;
+  const coverUrl = img?.x250?.x1 ?? img?.x350?.x1 ?? img?.x150?.x1 ?? img?.raw?.url;
 
   let publishedYear: number | undefined;
   if (work.release_date) {
@@ -185,5 +186,6 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries): 
     coverUrl,
     sourceUrl: `https://mangabaka.org/work/${work.id}`,
     ...(communityRating !== undefined ? { communityRating } : {}),
+    ...(communityRatingCount !== undefined ? { communityRatingCount } : {}),
   };
 }

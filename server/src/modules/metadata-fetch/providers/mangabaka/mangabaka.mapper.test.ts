@@ -100,6 +100,7 @@ describe('mapMangabakaSeries', () => {
       publishedDate: '2013-05-18',
       genres: ['action', 'drama', 'psychological'],
       communityRating: 3.51,
+      communityRatingCount: 794,
       coverUrl: 'https://cdn.mangabaka.dev/x250/1',
       sourceUrl: 'https://mangabaka.org/1',
       description: 'A manga about dice.',
@@ -108,6 +109,11 @@ describe('mapMangabakaSeries', () => {
 
   it('returns null when series has no id', () => {
     const series = { ...baseSeries, id: 0 };
+    expect(mapMangabakaSeries(series)).toBeNull();
+  });
+
+  it('returns null when series is merged_with another', () => {
+    const series = { ...baseSeries, merged_with: 42 };
     expect(mapMangabakaSeries(series)).toBeNull();
   });
 
@@ -120,6 +126,19 @@ describe('mapMangabakaSeries', () => {
     };
     const result = mapMangabakaSeries(series);
     expect(result?.subtitle).toBe('ワンピース');
+  });
+
+  it('uses romanized_title as subtitle when different from main title and native_title is same', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: '원피스',
+      native_title: '원피스',
+      romanized_title: 'One Piece',
+    };
+    const result = mapMangabakaSeries(series);
+    // native_title is same as main title, so falls to romanized_title
+    // resolveTitle returns 'One Piece' (romanized), native_title '원피스' !== 'One Piece' so native_title wins
+    expect(result?.subtitle).toBe('원피스');
   });
 
   it('omits subtitle when native_title equals main title', () => {
@@ -251,10 +270,28 @@ describe('mapMangabakaSeries', () => {
     expect(result?.coverUrl).toBeUndefined();
   });
 
-  it('falls back to raw cover URL when x250 is null', () => {
+  it('falls back through cover variants: x250 -> x350 -> x150 -> raw', () => {
     const series: MangabakaSeries = {
       ...baseSeries,
-      cover: { ...baseSeries.cover!, x250: null },
+      cover: { ...baseSeries.cover!, x250: null, x350: { x1: 'https://cdn.mangabaka.dev/x350/1', x2: '', x3: '' } },
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x350/1');
+  });
+
+  it('falls back to x150 when x250 and x350 are null', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      cover: { ...baseSeries.cover!, x250: null, x350: null },
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x150/1');
+  });
+
+  it('falls back to raw cover URL when all variants are null', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      cover: { ...baseSeries.cover!, x250: null, x350: null, x150: null },
     };
     const result = mapMangabakaSeries(series);
     expect(result?.coverUrl).toBe('https://images.mangabaka.dev/test');
@@ -301,6 +338,17 @@ describe('mapMangabakaSeries', () => {
     const series: MangabakaSeries = { ...baseSeries, published: null };
     const result = mapMangabakaSeries(series);
     expect(result?.publishedDate).toBeUndefined();
+  });
+
+  it('populates communityRatingCount from popularity.global.current', () => {
+    const result = mapMangabakaSeries(baseSeries);
+    expect(result?.communityRatingCount).toBe(794);
+  });
+
+  it('returns undefined communityRatingCount when popularity is null', () => {
+    const series: MangabakaSeries = { ...baseSeries, popularity: null };
+    const result = mapMangabakaSeries(series);
+    expect(result?.communityRatingCount).toBeUndefined();
   });
 });
 
@@ -393,6 +441,25 @@ describe('pickBestCollection', () => {
     expect(result?.id).toBe('col-digital');
   });
 
+  it('caps count_main contribution at 50 to prevent domination', () => {
+    const nonVolume: MangabakaCollection = {
+      ...mockCollection,
+      type: 'omnibus',
+      id: 'col-omnibus',
+      count_main: 200,
+    };
+    const volume: MangabakaCollection = {
+      ...mockCollection,
+      type: 'volume',
+      id: 'col-volume',
+      count_main: 5,
+    };
+    const result = pickBestCollection([nonVolume, volume]);
+    // volume type (100) + count_main capped (5) = 105
+    // omnibus type (0) + count_main capped (50) = 50
+    expect(result?.id).toBe('col-volume');
+  });
+
   it('returns null for empty array', () => {
     expect(pickBestCollection([])).toBeNull();
   });
@@ -422,6 +489,7 @@ describe('mapMangabakaWork', () => {
     expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x250/work');
     expect(result?.sourceUrl).toBe('https://mangabaka.org/work/019e1d69-4210-767b-acd5-1de151bd138b');
     expect(result?.communityRating).toBeCloseTo(3.515, 1);
+    expect(result?.communityRatingCount).toBe(794);
   });
 
   it('returns null for work without id', () => {
@@ -474,6 +542,16 @@ describe('mapMangabakaWork', () => {
     expect(result?.isbn13).toBeUndefined();
   });
 
+  it('classifies 979-prefix 13-digit ISBN as isbn13', () => {
+    const work: MangabakaWork = {
+      ...mockWork,
+      identifiers: [{ id: '9791234567890', name: 'isbn' }],
+    };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.isbn13).toBe('9791234567890');
+    expect(result?.isbn10).toBeUndefined();
+  });
+
   it('handles ISBN with dashes and spaces', () => {
     const work: MangabakaWork = {
       ...mockWork,
@@ -481,5 +559,41 @@ describe('mapMangabakaWork', () => {
     };
     const result = mapMangabakaWork(work, baseSeries);
     expect(result?.isbn13).toBe('9781569319000');
+  });
+
+  it('maps sequence_numeric of 0 to seriesIndex 0', () => {
+    const work: MangabakaWork = {
+      ...mockWork,
+      sequence_numeric: 0,
+    };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.seriesIndex).toBe(0);
+  });
+
+  it('falls back through work image variants: x250 -> x350 -> x150 -> raw', () => {
+    const work: MangabakaWork = {
+      ...mockWork,
+      images: [
+        {
+          ...mockWork.images[0],
+          image: {
+            raw: {
+              url: 'https://images.mangabaka.dev/raw',
+              size: 50000,
+              height: 800,
+              width: 600,
+              blurhash: 'test',
+              thumbhash: 'test',
+              format: 'jpeg',
+            },
+            x150: null,
+            x250: null,
+            x350: { x1: 'https://cdn.mangabaka.dev/x350/work', x2: '', x3: '' },
+          },
+        },
+      ],
+    };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x350/work');
   });
 });

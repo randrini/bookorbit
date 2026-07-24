@@ -23,7 +23,13 @@ const VOLUME_MARKER_RE = /\s+(?:t(?:ome)?|vol(?:ume)?|v|issue|ch(?:apter)?)\.?\s
 const BARE_VOLUME_RE = /\b(\d+)\s*$/;
 
 function stripBrackets(title: string): string {
-  return title.replace(/\s*\[[^\]]*\]/g, '').trim();
+  let prev: string;
+  let result = title;
+  do {
+    prev = result;
+    result = result.replace(/\s*\[[^\][]*\]/g, '').trim();
+  } while (result !== prev);
+  return result;
 }
 
 export function stripVolumeMarker(title: string): string {

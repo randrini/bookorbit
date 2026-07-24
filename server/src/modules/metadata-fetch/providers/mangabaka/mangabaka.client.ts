@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { sanitizeLogValue } from '../../../../common/utils/log-sanitize.utils';
 import { fetchWithThrottle } from '../../fetch-with-throttle';
 import { ProviderThrottleError } from '../../provider-throttle.error';
 import { PROVIDER_DELAYS_MS, PROVIDER_TIMEOUT_MS } from '../provider-constants';
-import { buildRequestSignal, sanitizeLogError, sleep } from '../provider-utils';
+import { buildRequestSignal, sleep } from '../provider-utils';
 import { MangabakaCollection, MangabakaEnvelope, MangabakaPagination, MangabakaSeries, MangabakaWork } from './mangabaka.types';
 
 const BASE_URL = 'https://api.mangabaka.org';
@@ -57,8 +58,7 @@ export class MangabakaClient {
     return envelope?.data ?? [];
   }
 
-  async fetchWorks(collectionId: string, signal?: AbortSignal): Promise<MangabakaWork[]> {
-    // The API rejects limit values above 50 with a 400, so cap at 50.
+  async fetchWorks(collectionId: string, signal?: AbortSignal, targetSequence?: number): Promise<MangabakaWork[]> {
     const limit = 50;
     const firstEnvelope = await this.get<MangabakaEnvelope<MangabakaWork[]> & { pagination: MangabakaPagination }>(
       'fetchWorks',
@@ -68,6 +68,12 @@ export class MangabakaClient {
     if (!firstEnvelope?.data) return [];
 
     const allWorks = [...firstEnvelope.data];
+
+    // Early exit if target found on first page
+    if (targetSequence !== undefined && allWorks.some((w) => w.sequence_numeric === targetSequence)) {
+      return allWorks;
+    }
+
     const pagination = firstEnvelope.pagination;
     if (pagination && pagination.count > limit) {
       const totalPages = Math.ceil(pagination.count / limit);
@@ -79,6 +85,14 @@ export class MangabakaClient {
         );
         if (envelope?.data) {
           allWorks.push(...envelope.data);
+          // Early exit if target found on this page
+          if (targetSequence !== undefined && envelope.data.some((w) => w.sequence_numeric === targetSequence)) {
+            return allWorks;
+          }
+        } else {
+          this.logger.warn(
+            `[MangaBaka.fetchWorks] [fail] page=${page} collectionId="${sanitizeLogValue(collectionId)}" errorClass=HttpError error="page fetch returned null"`,
+          );
         }
       }
     }
@@ -95,7 +109,7 @@ export class MangabakaClient {
   private async get<T>(op: string, path: string, signal?: AbortSignal): Promise<T | null> {
     await this.rateLimiter.throttle(signal);
     const startedAt = Date.now();
-    this.logger.log(`[mangabaka] [start] op=${op} path="${sanitizeLogError(path)}"`);
+    this.logger.log(`[MangaBaka.${op}] [start] path="${sanitizeLogValue(path)}"`);
 
     try {
       const res = await fetchWithThrottle(`${BASE_URL}${path}`, {
@@ -104,19 +118,22 @@ export class MangabakaClient {
       });
 
       if (!res.ok) {
-        this.logger.warn(`[mangabaka] [fail] op=${op} status=${res.status} durationMs=${Date.now() - startedAt} error="non-ok response"`);
+        this.logger.warn(
+          `[MangaBaka.${op}] [fail] status=${res.status} durationMs=${Date.now() - startedAt} errorClass=HttpError error="non-ok response"`,
+        );
         return null;
       }
 
       const body = (await res.json()) as T;
-      this.logger.log(`[mangabaka] [end] op=${op} status=${res.status} durationMs=${Date.now() - startedAt}`);
+      this.logger.log(`[MangaBaka.${op}] [end] status=${res.status} durationMs=${Date.now() - startedAt}`);
       return body;
     } catch (err) {
       if (err instanceof ProviderThrottleError) {
-        this.logger.warn(`[mangabaka] [fail] op=${op} durationMs=${Date.now() - startedAt} error="throttled"`);
+        this.logger.warn(`[MangaBaka.${op}] [fail] durationMs=${Date.now() - startedAt} errorClass=ThrottleError error="throttled"`);
         throw err;
       }
-      this.logger.warn(`[mangabaka] [fail] op=${op} durationMs=${Date.now() - startedAt} error="${sanitizeLogError(err)}"`);
+      const errorClass = err instanceof Error ? err.constructor.name : 'Unknown';
+      this.logger.warn(`[MangaBaka.${op}] [fail] durationMs=${Date.now() - startedAt} errorClass=${errorClass} error="${sanitizeLogValue(err)}"`);
       return null;
     }
   }

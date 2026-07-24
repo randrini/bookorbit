@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
 
+import { sanitizeLogValue } from '../../../../common/utils/log-sanitize.utils';
 import { ProviderConfigService } from '../../../metadata-preferences/provider-config.service';
+import { ProviderThrottleError } from '../../provider-throttle.error';
 import { IdentifiableProvider } from '../metadata-provider';
 import { MetadataSearchParams } from '../metadata-search-params';
 import { PROVIDER_LIMITS } from '../provider-constants';
@@ -10,7 +12,7 @@ import { MangabakaClient } from './mangabaka.client';
 import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
 import { extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
 @Injectable()
 export class MangabakaProvider implements IdentifiableProvider {
@@ -36,6 +38,9 @@ export class MangabakaProvider implements IdentifiableProvider {
     const query = params.author ? `${cleanTitle ?? ''} ${params.author}`.trim() : (cleanTitle ?? '');
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
 
+    const startedAt = Date.now();
+    this.logger.log(`[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} - search started`);
+
     // Prefer the stable /v1/series/search endpoint (returns full series objects).
     // Fall back to /v1/series/match (fuzzy) when search yields no candidates.
     let series = await this.client.search(query, maxResults, params.signal);
@@ -50,15 +55,19 @@ export class MangabakaProvider implements IdentifiableProvider {
         const collections = await this.client.fetchCollections(topSeries.id, params.signal);
         const bestCollection = pickBestCollection(collections);
         if (bestCollection) {
-          const works = await this.client.fetchWorks(bestCollection.id, params.signal);
+          const works = await this.client.fetchWorks(bestCollection.id, params.signal, volumeNumber);
           const matchingWork = works.find((w) => w.sequence_numeric === volumeNumber);
           if (matchingWork) {
             const candidate = mapMangabakaWork(matchingWork, topSeries);
-            if (candidate) return [candidate];
+            if (candidate) {
+              this.logger.log(`[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=1 - search completed (volume match)`);
+              return [candidate];
+            }
           }
         }
-      } catch {
-        // If collection/work resolution fails, fall through to series-level candidates
+      } catch (err) {
+        if (err instanceof ProviderThrottleError) throw err;
+        // Otherwise fall through to series-level candidates
       }
     }
 
@@ -67,6 +76,7 @@ export class MangabakaProvider implements IdentifiableProvider {
       const candidate = mapMangabakaSeries(s);
       if (candidate) candidates.push(candidate);
     }
+    this.logger.log(`[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} - search completed`);
     return candidates;
   }
 
@@ -75,7 +85,9 @@ export class MangabakaProvider implements IdentifiableProvider {
     if (!enabled) return null;
 
     if (!UUID_RE.test(providerId)) {
-      this.logger.warn(`[mangabaka.lookup] invalid providerId="${providerId}"`);
+      this.logger.warn(
+        `[MangaBaka.lookupById] [fail] providerId="${sanitizeLogValue(providerId)}" errorClass=ValidationError error="invalid uuid format"`,
+      );
       return null;
     }
 

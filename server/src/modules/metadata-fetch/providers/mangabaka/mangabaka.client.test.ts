@@ -325,7 +325,7 @@ describe('MangabakaClient', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ status: 200, data: mockWorks, pagination: { count: 2, page: 1, limit: 100, next: null, previous: null } }),
+        json: () => Promise.resolve({ status: 200, data: mockWorks, pagination: { count: 2, page: 1, limit: 50, next: null, previous: null } }),
       } as Response);
 
       const result = await client.fetchWorks('col-1');
@@ -364,6 +364,64 @@ describe('MangabakaClient', () => {
 
       const result = await client.fetchWorks('col-1');
       expect(result).toHaveLength(75);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('early-exits when targetSequence found on first page', async () => {
+      const page1Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i + 1 }));
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ status: 200, data: page1Works, pagination: { count: 150, page: 1, limit: 50, next: 'page=2', previous: null } }),
+      } as Response);
+
+      const result = await client.fetchWorks('col-1', undefined, 5);
+      expect(result).toHaveLength(50);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('early-exits when targetSequence found on subsequent page', async () => {
+      const page1Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i + 1 }));
+      const page2Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${50 + i}`, series_id: 1, sequence_numeric: 51 + i }));
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ status: 200, data: page1Works, pagination: { count: 150, page: 1, limit: 50, next: 'page=2', previous: null } }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ status: 200, data: page2Works, pagination: { count: 150, page: 2, limit: 50, next: 'page=3', previous: 'page=1' } }),
+        } as Response);
+
+      const result = await client.fetchWorks('col-1', undefined, 60);
+      expect(result).toHaveLength(100);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('handles mid-pagination failure and logs warning', async () => {
+      const page1Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i }));
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ status: 200, data: page1Works, pagination: { count: 100, page: 1, limit: 50, next: 'page=2', previous: null } }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        } as Response);
+
+      const result = await client.fetchWorks('col-1');
+      expect(result).toHaveLength(50);
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 

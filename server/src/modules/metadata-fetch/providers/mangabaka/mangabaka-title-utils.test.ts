@@ -39,6 +39,7 @@ describe('stripVolumeMarker', () => {
       ['Berserk Vol.42 [Kentaro Miura] [Dark Horse]', 'Berserk'],
       ['One Piece [Eiichiro Oda]', 'One Piece'],
       ['Title [Tag1] [Tag2] [Tag3]', 'Title'],
+      ['Title [outer [inner]]', 'Title'],
     ];
 
     for (const [input, expected] of cases) {
