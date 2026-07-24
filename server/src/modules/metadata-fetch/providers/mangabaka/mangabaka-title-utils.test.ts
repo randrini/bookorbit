@@ -69,6 +69,7 @@ describe('stripVolumeMarker', () => {
       'Vol 7 Complex',
       'T09 Chronicles',
       ['123 45', '123 45'],
+      ['Naruto 9999', 'Naruto 9999'],
     ];
 
     for (const entry of cases) {

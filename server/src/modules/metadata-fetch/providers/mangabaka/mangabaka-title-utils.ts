@@ -4,11 +4,11 @@
 
 // Matches a trailing volume marker with an explicit prefix (T, Vol, v, issue, ch...).
 // Allows an optional trailing year (e.g. "Naruto Vol.72 2014") by not requiring
-// the marker to be the very last token — the year is stripped separately.
+// the marker to be the very last token; the year is stripped separately.
 const VOLUME_MARKER_RE = /\s+(?:t(?:ome)?|vol(?:ume)?|v|issue|ch(?:apter)?)\.?\s*\d+(?:\.\d+)?(?:\s+\d{4})?\s*$/i;
 
 // Matches a trailing year (4 digits 1000-2999) that may follow a volume marker.
-const TRAILING_YEAR_RE = /\s+\d{4}\s*$/;
+const TRAILING_YEAR_RE = /\s+[1-2]\d{3}\s*$/;
 
 // Matches a bare trailing number or range (e.g. "Fairy Tail 13", "Naruto 1-5").
 // For ranges, the first number is used as the volume.
@@ -52,11 +52,13 @@ export function stripVolumeMarker(title: string): string {
   const noYear = stripTrailingYear(noBrackets);
   const stripped = noYear.replace(VOLUME_MARKER_RE, '').trim();
   if (stripped !== noYear) return stripped;
-  // Only strip a bare trailing number if there is a word before it.
+  // Only strip a bare trailing number if there is a word before it and the
+  // number is a plausible volume (not a year > MAX_VOLUME_NUMBER).
   const bareMatch = noYear.match(/\s+(\d+)(?:-\d+)?\s*$/);
   if (bareMatch) {
     const before = noYear.slice(0, bareMatch.index).trim();
-    if (before.length > 0 && /\p{L}/u.test(before)) {
+    const num = parseInt(bareMatch[1], 10);
+    if (before.length > 0 && /\p{L}/u.test(before) && Number.isFinite(num) && num > 0 && num <= MAX_VOLUME_NUMBER) {
       return before;
     }
   }
