@@ -4,15 +4,57 @@ import { MangabakaCollection, MangabakaSeries, MangabakaWork } from './mangabaka
 
 const MANGABAKA_BASE_URL = 'https://mangabaka.org';
 
+// Language priority for title resolution, matching MangaBaka's v2 titles system.
+// Walk this list and pick the first language with a title; within each language,
+// is_primary wins, then official > native > alternative.
+const TITLE_LANGUAGE_PRIORITY = ['en', 'ja-Latn', 'ja', 'ko-Latn', 'ko', 'zh-Latn', 'zh', 'fr', 'de', 'es-la', 'pt-br'];
+
+function sortScore(t: { is_primary: boolean; traits: string[] }): number {
+  if (t.is_primary) return 0;
+  if (t.traits.includes('official')) return 1;
+  if (t.traits.includes('native')) return 2;
+  return 3;
+}
+
+function bestInGroup(titles: MangabakaSeries['titles'] | undefined, lang: string): string | undefined {
+  if (!titles?.length) return undefined;
+  const candidates = titles.filter((t) => t.language === lang);
+  if (candidates.length === 0) return undefined;
+  candidates.sort((a, b) => sortScore(a) - sortScore(b));
+  return candidates[0].title;
+}
+
 function resolveTitle(series: MangabakaSeries): string {
-  const englishTitle = findPrimaryTitle(series, 'en');
-  if (englishTitle) return englishTitle;
+  // v2 titles system: walk language priority, pick best per language
+  if (series.titles?.length) {
+    for (const lang of TITLE_LANGUAGE_PRIORITY) {
+      const title = bestInGroup(series.titles, lang);
+      if (title) return title;
+    }
+    // Fallback: native-trait titles
+    const nativeTitle = series.titles.find((t) => t.traits.includes('native'));
+    if (nativeTitle) return nativeTitle.title;
+    // Fallback: any title
+    return series.titles[0].title;
+  }
+  // v1 fallback (deprecated but still present)
   if (series.romanized_title) return series.romanized_title;
   return series.title;
 }
 
 function resolveSubtitle(series: MangabakaSeries): string | undefined {
   const mainTitle = resolveTitle(series);
+  // v2: find a secondary language title that differs from primary
+  if (series.titles?.length) {
+    // Try native language title as subtitle
+    const nativeTitle = series.titles.find((t) => t.traits.includes('native'));
+    if (nativeTitle && nativeTitle.title !== mainTitle) return nativeTitle.title;
+    // Try any other language title
+    const otherTitle = series.titles.find((t) => t.title !== mainTitle);
+    if (otherTitle) return otherTitle.title;
+    return undefined;
+  }
+  // v1 fallback
   if (series.native_title && series.native_title !== mainTitle) {
     return series.native_title;
   }
@@ -20,13 +62,6 @@ function resolveSubtitle(series: MangabakaSeries): string | undefined {
     return series.romanized_title;
   }
   return undefined;
-}
-
-function findPrimaryTitle(series: MangabakaSeries, lang: string): string | undefined {
-  const primary = series.titles?.find((t) => t.language === lang && t.is_primary && t.traits?.includes('official'));
-  if (primary) return primary.title;
-  const official = series.titles?.find((t) => t.language === lang && t.traits?.includes('official'));
-  return official?.title;
 }
 
 function resolveAuthors(series: MangabakaSeries): string[] | undefined {
@@ -154,10 +189,10 @@ export function pickBestCollection(collections: MangabakaCollection[], preferred
 function formatWorkTitle(seriesTitle: string, volumeNumber: number | undefined, chapterNumber?: number): string {
   let title = seriesTitle;
   if (volumeNumber !== undefined) {
-    title += ` - Vol ${volumeNumber}`;
+    title += `, Vol. ${String(volumeNumber).padStart(2, '0')}`;
   }
   if (chapterNumber !== undefined) {
-    title += ` - Ch ${chapterNumber}`;
+    title += ` - Ch ${String(chapterNumber).padStart(3, '0')}`;
   }
   return title;
 }

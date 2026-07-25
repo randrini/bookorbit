@@ -63,7 +63,7 @@ const mockSeries: MangabakaSeries = {
   links: [],
   links_v2: [],
   publishers: [{ name: 'LINE Webtoon', type: 'English', note: '' }],
-  titles: [{ language: 'en', traits: ['official'], title: 'DICE', note: null, is_primary: true }],
+  titles: [{ language: 'en', traits: ['official'], title: 'Dice', note: null, is_primary: true }],
   genres_v2: null,
   genres: ['action', 'drama'],
   tags_v2: [],
@@ -804,7 +804,7 @@ describe('MangabakaProvider', () => {
       const result = await provider.lookupById(validUuid);
       expect(result).not.toBeNull();
       expect(result?.providerId).toBe(validUuid);
-      expect(result?.title).toBe('DICE - Vol 1');
+      expect(result?.title).toBe('Dice, Vol. 01');
     });
 
     it('calls fetchWork with correct UUID', async () => {

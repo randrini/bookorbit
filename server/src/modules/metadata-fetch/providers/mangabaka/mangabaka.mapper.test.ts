@@ -66,7 +66,7 @@ const baseSeries: MangabakaSeries = {
   ],
   titles: [
     { language: 'ko', traits: ['native'], title: '다이스', note: null, is_primary: true },
-    { language: 'en', traits: ['official'], title: 'DICE', note: null, is_primary: true },
+    { language: 'en', traits: ['official'], title: 'Dice', note: null, is_primary: true },
   ],
   genres_v2: null,
   genres: ['action', 'drama', 'psychological'],
@@ -93,7 +93,7 @@ describe('mapMangabakaSeries', () => {
     expect(result).toMatchObject({
       provider: MetadataProviderKey.MANGABAKA,
       providerId: '1',
-      title: 'DICE',
+      title: 'Dice',
       authors: ['Hyun-Seok Yun'],
       publisher: 'LINE Webtoon',
       publishedYear: 2013,
@@ -117,36 +117,48 @@ describe('mapMangabakaSeries', () => {
     expect(mapMangabakaSeries(series)).toBeNull();
   });
 
-  it('prefers romanized_title over native_title as subtitle when different from main title', () => {
+  it('picks native title as subtitle when it differs from resolved main title', () => {
     const series: MangabakaSeries = {
       ...baseSeries,
       title: 'One Piece',
       native_title: 'ワンピース',
       romanized_title: null,
+      titles: [
+        { language: 'ja', traits: ['native'], title: 'ワンピース', note: null, is_primary: true },
+        { language: 'en', traits: ['official'], title: 'One Piece', note: null, is_primary: true },
+      ],
     };
     const result = mapMangabakaSeries(series);
     expect(result?.subtitle).toBe('ワンピース');
   });
 
-  it('uses romanized_title as subtitle when different from main title and native_title is same', () => {
+  it('picks romanized title as subtitle when native title matches main title', () => {
     const series: MangabakaSeries = {
       ...baseSeries,
       title: '원피스',
       native_title: '원피스',
       romanized_title: 'One Piece',
+      titles: [
+        { language: 'ko', traits: ['native'], title: '원피스', note: null, is_primary: true },
+        { language: 'en', traits: ['official'], title: 'One Piece', note: null, is_primary: true },
+        { language: 'ko-Latn', traits: ['official'], title: 'One Piece', note: null, is_primary: false },
+      ],
     };
     const result = mapMangabakaSeries(series);
-    // native_title is same as main title, so falls to romanized_title
-    // resolveTitle returns 'One Piece' (romanized), native_title '원피스' !== 'One Piece' so native_title wins
+    // Main title is 'One Piece' (en priority), subtitle is '원피스' (native, differs from main)
     expect(result?.subtitle).toBe('원피스');
   });
 
-  it('omits subtitle when native_title equals main title', () => {
+  it('omits subtitle when all titles share the same text', () => {
     const series: MangabakaSeries = {
       ...baseSeries,
       title: 'DICE',
       native_title: 'DICE',
       romanized_title: null,
+      titles: [
+        { language: 'ko', traits: ['native'], title: 'DICE', note: null, is_primary: true },
+        { language: 'en', traits: ['official'], title: 'DICE', note: null, is_primary: true },
+      ],
     };
     const result = mapMangabakaSeries(series);
     expect(result?.subtitle).toBeUndefined();
@@ -158,25 +170,39 @@ describe('mapMangabakaSeries', () => {
       title: 'DICE',
       titles: [
         { language: 'ko', traits: ['native'], title: '다이스', note: null, is_primary: true },
-        { language: 'en', traits: ['official'], title: 'DICE: The Cube that Changes Everything', note: null, is_primary: true },
+        { language: 'en', traits: ['official'], title: 'Dice: The Cube that Changes Everything', note: null, is_primary: true },
       ],
     };
     const result = mapMangabakaSeries(series);
-    expect(result?.title).toBe('DICE: The Cube that Changes Everything');
+    expect(result?.title).toBe('Dice: The Cube that Changes Everything');
   });
 
-  it('falls back to romanized_title when no English title', () => {
+  it('falls back through language priority to ja-Latn when no English title', () => {
     const series: MangabakaSeries = {
       ...baseSeries,
       title: 'ソードアート・オンライン',
       romanized_title: 'Sword Art Online',
-      titles: [{ language: 'ja', traits: ['native'], title: 'ソードアート・オンライン', note: null, is_primary: true }],
+      titles: [
+        { language: 'ja', traits: ['native'], title: 'ソードアート・オンライン', note: null, is_primary: true },
+        { language: 'ja-Latn', traits: ['official'], title: 'Sword Art Online', note: null, is_primary: true },
+      ],
     };
     const result = mapMangabakaSeries(series);
     expect(result?.title).toBe('Sword Art Online');
   });
 
-  it('falls back to title when no English or romanized title', () => {
+  it('falls back to native title when no priority language matches', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'ソードアート・オンライン',
+      romanized_title: null,
+      titles: [{ language: 'ja', traits: ['native'], title: 'ソードアート・オンライン', note: null, is_primary: true }],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.title).toBe('ソードアート・オンライン');
+  });
+
+  it('falls back to v1 title field when titles array is empty', () => {
     const series: MangabakaSeries = {
       ...baseSeries,
       title: 'ソードアート・オンライン',
@@ -185,6 +211,17 @@ describe('mapMangabakaSeries', () => {
     };
     const result = mapMangabakaSeries(series);
     expect(result?.title).toBe('ソードアート・オンライン');
+  });
+
+  it('falls back to v1 romanized_title when titles array is empty', () => {
+    const series: MangabakaSeries = {
+      ...baseSeries,
+      title: 'ソードアート・オンライン',
+      romanized_title: 'Sword Art Online',
+      titles: [],
+    };
+    const result = mapMangabakaSeries(series);
+    expect(result?.title).toBe('Sword Art Online');
   });
 
   it('extracts year from year field', () => {
@@ -476,7 +513,7 @@ describe('mapMangabakaWork', () => {
     expect(result).not.toBeNull();
     expect(result?.provider).toBe(MetadataProviderKey.MANGABAKA);
     expect(result?.providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
-    expect(result?.title).toBe('DICE - Vol 1');
+    expect(result?.title).toBe('Dice, Vol. 01');
     expect(result?.subtitle).toBe('The Evil Spirit');
     expect(result?.authors).toEqual(['Hyun-Seok Yun']);
     expect(result?.description).toBe('The first volume of Naruto.');
@@ -487,7 +524,7 @@ describe('mapMangabakaWork', () => {
     expect(result?.pageCount).toBe(200);
     expect(result?.isbn13).toBe('9781569319000');
     expect(result?.isbn10).toBeUndefined();
-    expect(result?.seriesName).toBe('DICE');
+    expect(result?.seriesName).toBe('Dice');
     expect(result?.seriesIndex).toBe(1);
     expect(result?.genres).toEqual(['action', 'drama', 'psychological']);
     expect(result?.coverUrl).toBe('https://cdn.mangabaka.dev/x250/work');
@@ -618,22 +655,22 @@ describe('mapMangabakaWork', () => {
 
   it('populates seriesMemberships with series name and work sequence', () => {
     const result = mapMangabakaWork(mockWork, baseSeries);
-    expect(result?.seriesMemberships).toEqual([{ seriesName: 'DICE', seriesIndex: 1 }]);
+    expect(result?.seriesMemberships).toEqual([{ seriesName: 'Dice', seriesIndex: 1 }]);
   });
 
   it('formats title with volume and chapter when chapterNumber is provided', () => {
     const result = mapMangabakaWork(mockWork, baseSeries, 3);
-    expect(result?.title).toBe('DICE - Vol 1 - Ch 3');
+    expect(result?.title).toBe('Dice, Vol. 01 - Ch 003');
   });
 
   it('formats title with volume only when chapterNumber is undefined', () => {
     const result = mapMangabakaWork(mockWork, baseSeries);
-    expect(result?.title).toBe('DICE - Vol 1');
+    expect(result?.title).toBe('Dice, Vol. 01');
   });
 
   it('formats title with volume only when chapterNumber is explicitly undefined', () => {
     const result = mapMangabakaWork(mockWork, baseSeries, undefined);
-    expect(result?.title).toBe('DICE - Vol 1');
+    expect(result?.title).toBe('Dice, Vol. 01');
   });
 });
 
