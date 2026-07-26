@@ -4037,7 +4037,6 @@
       "failedWithDuplicates": "{failed} neuspešnih ({count} podvojenih) | {failed} neuspešna ({count} podvojena) | {failed} neuspešnih ({count} podvojenih)",
       "view": "Ogled",
       "viewExisting": "Ogled obstoječega",
-      "importAnyway": "Vseeno uvozi",
       "hide": "Skrij",
       "details": "Podrobnosti",
       "alreadyExistsSaveAs": "Že obstaja - shrani kot:",

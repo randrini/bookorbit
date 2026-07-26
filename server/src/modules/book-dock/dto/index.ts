@@ -159,10 +159,6 @@ class FinalizeOverrideDto {
   folderId?: number;
 
   @IsOptional()
-  @IsBoolean()
-  skipDuplicateCheck?: boolean;
-
-  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)

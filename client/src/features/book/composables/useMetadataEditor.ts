@@ -161,6 +161,7 @@ export function useMetadataEditor() {
 
   const snapshot = ref(JSON.stringify(form))
   const includeAudioMetadata = ref(false)
+  let loadedBookId: number | null = null
 
   const isDirty = computed(() => JSON.stringify(form) !== snapshot.value)
 
@@ -217,7 +218,14 @@ export function useMetadataEditor() {
     form.customMetadata = (book.customMetadata ?? []).map((field) => ({ ...field }))
     includeAudioMetadata.value = book.audioMetadata != null || book.files.some((f) => f.format != null && FORMAT_TO_GROUP[f.format] === 'audio')
     snapshot.value = JSON.stringify(form)
+    loadedBookId = book.id
     error.value = null
+  }
+
+  function syncFromBook(book: BookDetail): boolean {
+    if (loadedBookId === book.id && (saving.value || isDirty.value)) return false
+    load(book)
+    return true
   }
 
   function reset() {
@@ -290,6 +298,7 @@ export function useMetadataEditor() {
     error.value = null
     try {
       const metadata = buildPayload()
+      const submittedSnapshot = JSON.stringify(form)
       const shouldSyncFileWrite = Object.keys(metadata).length > 0
       const res = await api(`/api/v1/books/${bookId}/metadata-and-locks${shouldSyncFileWrite ? '?syncFileWrite=true' : ''}`, {
         method: 'PATCH',
@@ -298,7 +307,7 @@ export function useMetadataEditor() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const updated = normalizeSaveResult((await res.json()) as BookDetail | BookMetadataSaveResult)
-      snapshot.value = JSON.stringify(form)
+      snapshot.value = submittedSnapshot
       return updated
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to save'
@@ -308,5 +317,5 @@ export function useMetadataEditor() {
     }
   }
 
-  return { form, saving, error, isDirty, load, reset, save }
+  return { form, saving, error, isDirty, load, syncFromBook, reset, save }
 }

@@ -73,7 +73,7 @@ describe('MetadataPreferenceResolver', () => {
       ]);
     }
 
-    expect(defaults.fields.title.mergeStrategy).toBe('fillMissing');
+    expect(defaults.fields.title.mergeStrategy).toBe('overwriteIfProvided');
     expect(defaults.fields.description.mergeStrategy).toBe('overwriteIfProvided');
     expect(defaults.options).toEqual({
       genres: { mode: 'merge', blocklist: [] },
