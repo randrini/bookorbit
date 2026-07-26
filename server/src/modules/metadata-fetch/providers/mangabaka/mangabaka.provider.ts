@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
+import { MangabakaCollectionSummary, MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
 
 import { sanitizeLogValue } from '../../../../common/utils/log-sanitize.utils';
 import { ProviderConfigService } from '../../../metadata-preferences/provider-config.service';
@@ -9,13 +9,10 @@ import { MetadataSearchParams } from '../metadata-search-params';
 import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
-import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
-import { detectLanguageHint, extractChapterNumber, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
+import { mapMangabakaSeries, mapMangabakaWork } from './mangabaka.mapper';
+import { extractChapterNumber, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
-
-// How many top series to try for volume resolution before falling back.
-const VOLUME_RESOLUTION_DEPTH = 3;
 
 @Injectable()
 export class MangabakaProvider implements IdentifiableProvider {
@@ -45,47 +42,18 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     if (!query) return [];
 
-    const languageHint = params.title ? detectLanguageHint(params.title) : undefined;
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
 
     const startedAt = Date.now();
-    this.logger.log(`[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} - search started`);
+    this.logger.log(
+      `[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} chapterNumber=${chapterNumber ?? 'none'} - search started`,
+    );
 
     // Prefer the stable /v1/series/search endpoint (returns full series objects).
     // Fall back to /v1/series/match (fuzzy) when search yields no candidates.
     let series = await this.client.search(query, maxResults, params.signal);
     if (series.length === 0) {
       series = await this.client.match(query, maxResults, params.signal);
-    }
-
-    // If a volume number was extracted, try to resolve a specific work for the
-    // top series. Try up to VOLUME_RESOLUTION_DEPTH series before giving up.
-    if (volumeNumber !== undefined && series.length > 0) {
-      for (let i = 0; i < Math.min(VOLUME_RESOLUTION_DEPTH, series.length); i++) {
-        const candidateSeries = series[i];
-        try {
-          const collections = await this.client.fetchCollections(candidateSeries.id, params.signal);
-          const bestCollection = pickBestCollection(collections, languageHint);
-          if (bestCollection) {
-            const works = await this.client.fetchWorks(bestCollection.id, params.signal, volumeNumber);
-            const matchingWork = works.find((w) => w.sequence_numeric === volumeNumber && w.count_type === 'main');
-            if (matchingWork) {
-              const candidate = mapMangabakaWork(matchingWork, candidateSeries, chapterNumber);
-              if (candidate) {
-                this.logger.log(
-                  `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=1 - search completed (volume match on series ${candidateSeries.id})`,
-                );
-                return [candidate];
-              }
-            }
-          }
-        } catch (err) {
-          if (err instanceof ProviderThrottleError) throw err;
-          this.logger.warn(
-            `[MangaBaka.search] [fail] seriesId=${candidateSeries.id} volumeNumber=${volumeNumber} errorClass=${err instanceof Error ? err.constructor.name : 'Unknown'} error="${sanitizeLogValue(err instanceof Error ? err.message : String(err))}" - volume resolution failed for this series, trying next`,
-          );
-        }
-      }
     }
 
     const candidates: MetadataCandidate[] = [];
@@ -95,6 +63,79 @@ export class MangabakaProvider implements IdentifiableProvider {
     }
     this.logger.log(`[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} - search completed`);
     return candidates;
+  }
+
+  async fetchSeriesCollections(seriesId: number, signal?: AbortSignal): Promise<MangabakaCollectionSummary[]> {
+    const { enabled } = await this.providerConfig.getConfig().then((c) => c.mangabaka);
+    if (!enabled) return [];
+
+    const startedAt = Date.now();
+    this.logger.log(`[MangaBaka.fetch_collections] [start] seriesId=${seriesId} - fetch collections started`);
+
+    try {
+      const collections = await this.client.fetchCollections(seriesId, signal);
+      const filtered = collections.filter((c) => c.count_main > 0);
+      const summaries: MangabakaCollectionSummary[] = filtered.map((c) => ({
+        id: c.id,
+        title: c.title,
+        language: c.language?.iso ?? '',
+        languageDisplay: c.language?.language ?? '',
+        publisher: c.publisher?.name ?? '',
+        medium: c.medium,
+        type: c.type,
+        countMain: c.count_main,
+        countExtra: c.count_extra,
+        countOther: c.count_other,
+      }));
+      this.logger.log(
+        `[MangaBaka.fetch_collections] [end] seriesId=${seriesId} durationMs=${Date.now() - startedAt} total=${collections.length} filtered=${summaries.length} - fetch collections completed`,
+      );
+      return summaries;
+    } catch (err) {
+      if (err instanceof ProviderThrottleError) throw err;
+      this.logger.warn(
+        `[MangaBaka.fetch_collections] [fail] seriesId=${seriesId} durationMs=${Date.now() - startedAt} errorClass=${err instanceof Error ? err.constructor.name : 'Unknown'} error="${sanitizeLogValue(err instanceof Error ? err.message : String(err))}" - fetch collections failed`,
+      );
+      return [];
+    }
+  }
+
+  async fetchCollectionWorks(collectionId: string, seriesId: number, signal?: AbortSignal): Promise<MetadataCandidate[]> {
+    const { enabled } = await this.providerConfig.getConfig().then((c) => c.mangabaka);
+    if (!enabled) return [];
+
+    const startedAt = Date.now();
+    this.logger.log(
+      `[MangaBaka.fetch_collection_works] [start] collectionId="${sanitizeLogValue(collectionId)}" seriesId=${seriesId} - fetch collection works started`,
+    );
+
+    try {
+      const series = await this.client.fetchSeries(seriesId, signal);
+      if (!series) {
+        this.logger.log(
+          `[MangaBaka.fetch_collection_works] [end] collectionId="${sanitizeLogValue(collectionId)}" seriesId=${seriesId} durationMs=${Date.now() - startedAt} candidates=0 - series not found`,
+        );
+        return [];
+      }
+
+      const works = await this.client.fetchWorks(collectionId, signal);
+      const mainWorks = works.filter((w) => w.count_type === 'main');
+      const candidates: MetadataCandidate[] = [];
+      for (const work of mainWorks) {
+        const candidate = mapMangabakaWork(work, series);
+        if (candidate) candidates.push(candidate);
+      }
+      this.logger.log(
+        `[MangaBaka.fetch_collection_works] [end] collectionId="${sanitizeLogValue(collectionId)}" seriesId=${seriesId} durationMs=${Date.now() - startedAt} works=${works.length} mainWorks=${mainWorks.length} candidates=${candidates.length} - fetch collection works completed`,
+      );
+      return candidates;
+    } catch (err) {
+      if (err instanceof ProviderThrottleError) throw err;
+      this.logger.warn(
+        `[MangaBaka.fetch_collection_works] [fail] collectionId="${sanitizeLogValue(collectionId)}" seriesId=${seriesId} durationMs=${Date.now() - startedAt} errorClass=${err instanceof Error ? err.constructor.name : 'Unknown'} error="${sanitizeLogValue(err instanceof Error ? err.message : String(err))}" - fetch collection works failed`,
+      );
+      return [];
+    }
   }
 
   async lookupById(providerId: string, signal?: AbortSignal): Promise<MetadataCandidate | null> {

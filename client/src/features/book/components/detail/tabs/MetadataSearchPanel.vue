@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { Search, BookOpen, Loader2, PencilLine } from '@lucide/vue'
 import type { MetadataCandidate, MetadataProviderInfo, MetadataProviderKey } from '@bookorbit/types'
 import MetadataResultCard from './MetadataResultCard.vue'
+import MangabakaSeriesDrillDown from './MangabakaSeriesDrillDown.vue'
+import { useMangabakaDrillDown } from '../../../composables/useMangabakaDrillDown'
 import { providerActivePillStyle } from '../../../lib/metadata-fetch'
 import { COVER_ASPECT_RATIO_KEY, DEFAULT_COVER_ASPECT_RATIO } from '../../../lib/cover-aspect-ratio'
 
@@ -27,6 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const coverAspectRatio = inject(COVER_ASPECT_RATIO_KEY, ref(DEFAULT_COVER_ASPECT_RATIO))
+const drillDown = useMangabakaDrillDown()
 
 const form = reactive({
   title: props.searchDefaults.title ?? '',
@@ -63,6 +66,23 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  () => form.title,
+  (title) => {
+    drillDown.highlightedVolume.value = parseVolumeNumber(title)
+  },
+  { immediate: true },
+)
+
+const mangabakaResults = computed(() => props.filteredResults.filter((candidate) => candidate.provider === 'mangabaka'))
+const topMangabakaSeries = computed(() => mangabakaResults.value.slice(0, 3))
+
+function parseVolumeNumber(title: string | undefined): number | null {
+  const match = (title ?? '').match(/(?:vol\.?|volume|t)\s*(\d{1,3})/i)
+  if (match && match[1]) return parseInt(match[1], 10)
+  return null
+}
 
 function runSearch() {
   if (!canSearch.value) return
@@ -260,6 +280,20 @@ function sameProviderSelection(keys: MetadataProviderKey[]) {
           :providers="providers"
           @select="handleSelectCandidate"
         />
+      </div>
+
+      <!-- MangaBaka volume browser -->
+      <div v-if="topMangabakaSeries.length" class="border-t border-border mt-4 pt-4">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">MangaBaka Volumes</p>
+        <div class="space-y-2">
+          <MangabakaSeriesDrillDown
+            v-for="candidate in topMangabakaSeries"
+            :key="candidate.providerId"
+            :series-candidate="candidate"
+            :drill-down="drillDown"
+            @select="handleSelectCandidate"
+          />
+        </div>
       </div>
     </div>
   </div>

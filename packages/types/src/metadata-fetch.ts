@@ -98,6 +98,19 @@ export interface MetadataProviderInfo {
   selectedByFieldRules?: boolean;
 }
 
+export interface MangabakaCollectionSummary {
+  id: string;
+  title: string;
+  language: string;
+  languageDisplay: string;
+  publisher: string;
+  medium: string;
+  type: string;
+  countMain: number;
+  countExtra: number;
+  countOther: number;
+}
+
 export type MetadataFetchEmptyReason = "no_active_providers" | "providers_throttled" | "no_candidates" | "no_resolved_fields";
 
 export interface MetadataFetchDiagnostics {

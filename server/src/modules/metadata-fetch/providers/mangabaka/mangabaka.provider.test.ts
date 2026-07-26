@@ -3,7 +3,6 @@ import { ProviderConfigurations } from '@bookorbit/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ProviderConfigService } from '../../../metadata-preferences/provider-config.service';
-import { ProviderThrottleError } from '../../provider-throttle.error';
 import { MangabakaClient } from './mangabaka.client';
 import { MangabakaProvider } from './mangabaka.provider';
 import { MangabakaCollection, MangabakaSeries, MangabakaWork } from './mangabaka.types';
@@ -272,273 +271,14 @@ describe('MangabakaProvider', () => {
       expect(client.match).toHaveBeenCalledWith('DICE', 10, controller.signal);
     });
 
-    it('with volume number: fetches collections+works and returns work candidate', async () => {
-      const mockCollection: MangabakaCollection = {
-        id: 'col-1',
-        series_id: 1,
-        title: 'DICE Vol. 1',
-        language: { iso: 'en', language: 'English' },
-        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
-        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
-        type: 'volume',
-        format: 'paged',
-        medium: 'digital',
-        status: 'published',
-        reading: 'rtl',
-        licensed: true,
-        description: { desc: '', source: 'mangabaka' },
-        note: null,
-        start_date: null,
-        end_date: null,
-        links: [],
-        related_collection_id: null,
-        count_main: 10,
-        count_extra: 0,
-        count_other: 0,
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-      const mockWork: MangabakaWork = {
-        id: '019e1d69-4210-767b-acd5-1de151bd138b',
-        series_id: 1,
-        source_ids: [],
-        sub_title: null,
-        count_type: 'main',
-        images: [],
-        release_date: null,
-        sequence_string: '1',
-        sequence_numeric: 1,
-        identifiers: [],
-        trim: null,
-        description: null,
-        note: null,
-        pages: null,
-        price: null,
-        links: [],
-        inc_chapters: null,
-        part_of_volume: null,
-        revision: null,
-        updated_at: '2024-01-01T00:00:00Z',
-        collections: [mockCollection],
-      };
-
+    it('with volume number: returns series candidates (no volume resolution)', async () => {
       vi.mocked(client.search).mockResolvedValue([mockSeries]);
-      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
-      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
 
       const result = await provider.search({ title: 'DICE T01' });
 
       expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
-      expect(client.fetchCollections).toHaveBeenCalledWith(1, undefined);
-      expect(client.fetchWorks).toHaveBeenCalledWith('col-1', undefined, 1);
-      expect(result).toHaveLength(1);
-      expect(result[0].providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
-      expect(result[0].seriesIndex).toBe(1);
-    });
-
-    it('with volume number: ignores extra works with same sequence_numeric', async () => {
-      const mockCollection: MangabakaCollection = {
-        id: 'col-1',
-        series_id: 1,
-        title: 'DICE Vol. 1',
-        language: { iso: 'en', language: 'English' },
-        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
-        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
-        type: 'volume',
-        format: 'paged',
-        medium: 'digital',
-        status: 'published',
-        reading: 'rtl',
-        licensed: true,
-        description: { desc: '', source: 'mangabaka' },
-        note: null,
-        start_date: null,
-        end_date: null,
-        links: [],
-        related_collection_id: null,
-        count_main: 10,
-        count_extra: 0,
-        count_other: 0,
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-      const extraWork: MangabakaWork = {
-        id: 'extra-work-id',
-        series_id: 1,
-        source_ids: [],
-        sub_title: null,
-        count_type: 'extra',
-        images: [],
-        release_date: null,
-        sequence_string: '1',
-        sequence_numeric: 1,
-        identifiers: [],
-        trim: null,
-        description: null,
-        note: null,
-        pages: null,
-        price: null,
-        links: [],
-        inc_chapters: null,
-        part_of_volume: null,
-        revision: null,
-        updated_at: '2024-01-01T00:00:00Z',
-        collections: [mockCollection],
-      };
-      const mainWork: MangabakaWork = {
-        id: 'main-work-id',
-        series_id: 1,
-        source_ids: [],
-        sub_title: null,
-        count_type: 'main',
-        images: [],
-        release_date: null,
-        sequence_string: '1',
-        sequence_numeric: 1,
-        identifiers: [],
-        trim: null,
-        description: null,
-        note: null,
-        pages: null,
-        price: null,
-        links: [],
-        inc_chapters: null,
-        part_of_volume: null,
-        revision: null,
-        updated_at: '2024-01-01T00:00:00Z',
-        collections: [mockCollection],
-      };
-
-      vi.mocked(client.search).mockResolvedValue([mockSeries]);
-      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
-      // Extra work appears first, but should be skipped in favor of main work
-      vi.mocked(client.fetchWorks).mockResolvedValue([extraWork, mainWork]);
-
-      const result = await provider.search({ title: 'DICE T01' });
-
-      expect(result).toHaveLength(1);
-      expect(result[0].providerId).toBe('main-work-id');
-    });
-
-    it('with volume number: tries second series when first has no matching work', async () => {
-      const series2: MangabakaSeries = { ...mockSeries, id: 2 };
-      const mockCollection1: MangabakaCollection = {
-        id: 'col-1',
-        series_id: 1,
-        title: 'DICE Vol. 1',
-        language: { iso: 'en', language: 'English' },
-        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
-        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
-        type: 'volume',
-        format: 'paged',
-        medium: 'digital',
-        status: 'published',
-        reading: 'rtl',
-        licensed: true,
-        description: { desc: '', source: 'mangabaka' },
-        note: null,
-        start_date: null,
-        end_date: null,
-        links: [],
-        related_collection_id: null,
-        count_main: 5,
-        count_extra: 0,
-        count_other: 0,
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-      const mockCollection2: MangabakaCollection = { ...mockCollection1, id: 'col-2', series_id: 2 };
-      const mockWork2: MangabakaWork = {
-        id: 'work-from-series-2',
-        series_id: 2,
-        source_ids: [],
-        sub_title: null,
-        count_type: 'main',
-        images: [],
-        release_date: null,
-        sequence_string: '1',
-        sequence_numeric: 1,
-        identifiers: [],
-        trim: null,
-        description: null,
-        note: null,
-        pages: null,
-        price: null,
-        links: [],
-        inc_chapters: null,
-        part_of_volume: null,
-        revision: null,
-        updated_at: '2024-01-01T00:00:00Z',
-        collections: [mockCollection2],
-      };
-
-      vi.mocked(client.search).mockResolvedValue([mockSeries, series2]);
-      // First series has collections but no matching work
-      vi.mocked(client.fetchCollections).mockResolvedValueOnce([mockCollection1]).mockResolvedValueOnce([mockCollection2]);
-      vi.mocked(client.fetchWorks).mockResolvedValueOnce([]).mockResolvedValueOnce([mockWork2]);
-
-      const result = await provider.search({ title: 'DICE T01' });
-
-      expect(client.fetchCollections).toHaveBeenCalledTimes(2);
-      expect(client.fetchCollections).toHaveBeenNthCalledWith(1, 1, undefined);
-      expect(client.fetchCollections).toHaveBeenNthCalledWith(2, 2, undefined);
-      expect(result).toHaveLength(1);
-      expect(result[0].providerId).toBe('work-from-series-2');
-    });
-
-    it('with volume number but no matching work: falls back to series candidates', async () => {
-      const mockCollection: MangabakaCollection = {
-        id: 'col-1',
-        series_id: 1,
-        title: 'DICE Vol. 1',
-        language: { iso: 'en', language: 'English' },
-        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
-        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
-        type: 'volume',
-        format: 'paged',
-        medium: 'digital',
-        status: 'published',
-        reading: 'rtl',
-        licensed: true,
-        description: { desc: '', source: 'mangabaka' },
-        note: null,
-        start_date: null,
-        end_date: null,
-        links: [],
-        related_collection_id: null,
-        count_main: 10,
-        count_extra: 0,
-        count_other: 0,
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-      const mockWork: MangabakaWork = {
-        id: '019e1d69-4210-767b-acd5-1de151bd138b',
-        series_id: 1,
-        source_ids: [],
-        sub_title: null,
-        count_type: 'main',
-        images: [],
-        release_date: null,
-        sequence_string: '2',
-        sequence_numeric: 2,
-        identifiers: [],
-        trim: null,
-        description: null,
-        note: null,
-        pages: null,
-        price: null,
-        links: [],
-        inc_chapters: null,
-        part_of_volume: null,
-        revision: null,
-        updated_at: '2024-01-01T00:00:00Z',
-        collections: [mockCollection],
-      };
-
-      vi.mocked(client.search).mockResolvedValue([mockSeries]);
-      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
-      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
-
-      const result = await provider.search({ title: 'DICE T01' });
-
-      // sequence_numeric is 2, we searched for volume 1, so no match -> fallback to series
+      expect(client.fetchCollections).not.toHaveBeenCalled();
+      expect(client.fetchWorks).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0].providerId).toBe('1');
     });
@@ -564,104 +304,175 @@ describe('MangabakaProvider', () => {
       expect(client.fetchWorks).not.toHaveBeenCalled();
       expect(result).toEqual([]);
     });
+  });
 
-    it('re-throws ProviderThrottleError from fetchCollections during volume resolution', async () => {
-      vi.mocked(client.search).mockResolvedValue([mockSeries]);
-      vi.mocked(client.fetchCollections).mockRejectedValue(new ProviderThrottleError(5000));
+  describe('fetchSeriesCollections()', () => {
+    const mockCollection: MangabakaCollection = {
+      id: 'col-1',
+      series_id: 1,
+      title: 'DICE Vol. 1',
+      language: { iso: 'en', language: 'English' },
+      publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
+      edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
+      type: 'volume',
+      format: 'paged',
+      medium: 'digital',
+      status: 'published',
+      reading: 'rtl',
+      licensed: true,
+      description: { desc: '', source: 'mangabaka' },
+      note: null,
+      start_date: null,
+      end_date: null,
+      links: [],
+      related_collection_id: null,
+      count_main: 10,
+      count_extra: 0,
+      count_other: 0,
+      updated_at: '2024-01-01T00:00:00Z',
+    };
 
-      await expect(provider.search({ title: 'DICE T01' })).rejects.toThrow(ProviderThrottleError);
+    it('returns mapped summaries, filters empty collections', async () => {
+      const emptyCollection: MangabakaCollection = { ...mockCollection, id: 'col-empty', count_main: 0 };
+      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection, emptyCollection]);
+
+      const result = await provider.fetchSeriesCollections(1);
+
+      expect(client.fetchCollections).toHaveBeenCalledWith(1, undefined);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: 'col-1',
+        title: 'DICE Vol. 1',
+        language: 'en',
+        languageDisplay: 'English',
+        publisher: 'LINE Webtoon',
+        medium: 'digital',
+        type: 'volume',
+        countMain: 10,
+        countExtra: 0,
+        countOther: 0,
+      });
     });
 
-    it('passes language hint from [Manga FR] to pickBestCollection', async () => {
-      const mockCollection: MangabakaCollection = {
-        id: 'col-1',
-        series_id: 1,
-        title: 'DICE Vol. 1',
-        language: { iso: 'en', language: 'English' },
-        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
-        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
-        type: 'volume',
-        format: 'paged',
-        medium: 'digital',
-        status: 'published',
-        reading: 'rtl',
-        licensed: true,
-        description: { desc: '', source: 'mangabaka' },
-        note: null,
-        start_date: null,
-        end_date: null,
-        links: [],
-        related_collection_id: null,
-        count_main: 10,
-        count_extra: 0,
-        count_other: 0,
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-      const mockWork: MangabakaWork = {
-        id: '019e1d69-4210-767b-acd5-1de151bd138b',
-        series_id: 1,
-        source_ids: [],
-        sub_title: null,
-        count_type: 'main',
-        images: [],
-        release_date: null,
-        sequence_string: '1',
-        sequence_numeric: 1,
-        identifiers: [],
-        trim: null,
-        description: null,
-        note: null,
-        pages: null,
-        price: null,
-        links: [],
-        inc_chapters: null,
-        part_of_volume: null,
-        revision: null,
-        updated_at: '2024-01-01T00:00:00Z',
-        collections: [mockCollection],
-      };
+    it('returns [] when provider disabled', async () => {
+      vi.mocked(providerConfig.getConfig).mockResolvedValue(disabledConfig);
 
-      vi.mocked(client.search).mockResolvedValue([mockSeries]);
+      const result = await provider.fetchSeriesCollections(1);
+
+      expect(result).toEqual([]);
+      expect(client.fetchCollections).not.toHaveBeenCalled();
+    });
+
+    it('passes signal to client', async () => {
+      const controller = new AbortController();
       vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
+
+      await provider.fetchSeriesCollections(1, controller.signal);
+
+      expect(client.fetchCollections).toHaveBeenCalledWith(1, controller.signal);
+    });
+  });
+
+  describe('fetchCollectionWorks()', () => {
+    const mockCollection: MangabakaCollection = {
+      id: 'col-1',
+      series_id: 1,
+      title: 'DICE Vol. 1',
+      language: { iso: 'en', language: 'English' },
+      publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
+      edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
+      type: 'volume',
+      format: 'paged',
+      medium: 'digital',
+      status: 'published',
+      reading: 'rtl',
+      licensed: true,
+      description: { desc: '', source: 'mangabaka' },
+      note: null,
+      start_date: null,
+      end_date: null,
+      links: [],
+      related_collection_id: null,
+      count_main: 10,
+      count_extra: 0,
+      count_other: 0,
+      updated_at: '2024-01-01T00:00:00Z',
+    };
+    const mockWork: MangabakaWork = {
+      id: '019e1d69-4210-767b-acd5-1de151bd138b',
+      series_id: 1,
+      source_ids: [],
+      sub_title: null,
+      count_type: 'main',
+      images: [],
+      release_date: null,
+      sequence_string: '1',
+      sequence_numeric: 1,
+      identifiers: [],
+      trim: null,
+      description: null,
+      note: null,
+      pages: null,
+      price: null,
+      links: [],
+      inc_chapters: null,
+      part_of_volume: null,
+      revision: null,
+      updated_at: '2024-01-01T00:00:00Z',
+      collections: [mockCollection],
+    };
+
+    it('returns mapped work candidates', async () => {
+      vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
       vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
 
-      const result = await provider.search({ title: 'DICE T01 [Manga FR]' });
+      const result = await provider.fetchCollectionWorks('col-1', 1);
 
-      expect(client.search).toHaveBeenCalledWith('DICE', 10, undefined);
+      expect(client.fetchSeries).toHaveBeenCalledWith(1, undefined);
+      expect(client.fetchWorks).toHaveBeenCalledWith('col-1', undefined);
       expect(result).toHaveLength(1);
       expect(result[0].providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
     });
 
-    it('re-throws ProviderThrottleError from fetchWorks during volume resolution', async () => {
-      const mockCollection: MangabakaCollection = {
-        id: 'col-1',
-        series_id: 1,
-        title: 'DICE Vol. 1',
-        language: { iso: 'en', language: 'English' },
-        publisher: { id: 1, type: 'publisher', sub_type: 'manga', aliases: null, parent_id: null, name: 'LINE Webtoon' },
-        edition: { id: 'ed-1', name: 'Standard', language: { iso: 'en', language: 'English' }, description: '', override_text: null },
-        type: 'volume',
-        format: 'paged',
-        medium: 'digital',
-        status: 'published',
-        reading: 'rtl',
-        licensed: true,
-        description: { desc: '', source: 'mangabaka' },
-        note: null,
-        start_date: null,
-        end_date: null,
-        links: [],
-        related_collection_id: null,
-        count_main: 10,
-        count_extra: 0,
-        count_other: 0,
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-      vi.mocked(client.search).mockResolvedValue([mockSeries]);
-      vi.mocked(client.fetchCollections).mockResolvedValue([mockCollection]);
-      vi.mocked(client.fetchWorks).mockRejectedValue(new ProviderThrottleError(5000));
+    it('returns [] when provider disabled', async () => {
+      vi.mocked(providerConfig.getConfig).mockResolvedValue(disabledConfig);
 
-      await expect(provider.search({ title: 'DICE T01' })).rejects.toThrow(ProviderThrottleError);
+      const result = await provider.fetchCollectionWorks('col-1', 1);
+
+      expect(result).toEqual([]);
+      expect(client.fetchSeries).not.toHaveBeenCalled();
+      expect(client.fetchWorks).not.toHaveBeenCalled();
+    });
+
+    it('returns [] when series not found', async () => {
+      vi.mocked(client.fetchSeries).mockResolvedValue(null);
+
+      const result = await provider.fetchCollectionWorks('col-1', 1);
+
+      expect(result).toEqual([]);
+      expect(client.fetchWorks).not.toHaveBeenCalled();
+    });
+
+    it('filters to count_type main only', async () => {
+      const extraWork: MangabakaWork = { ...mockWork, id: 'extra-id', count_type: 'extra' };
+      vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
+      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork, extraWork]);
+
+      const result = await provider.fetchCollectionWorks('col-1', 1);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
+    });
+
+    it('passes signal to client', async () => {
+      const controller = new AbortController();
+      vi.mocked(client.fetchSeries).mockResolvedValue(mockSeries);
+      vi.mocked(client.fetchWorks).mockResolvedValue([mockWork]);
+
+      await provider.fetchCollectionWorks('col-1', 1, controller.signal);
+
+      expect(client.fetchSeries).toHaveBeenCalledWith(1, controller.signal);
+      expect(client.fetchWorks).toHaveBeenCalledWith('col-1', controller.signal);
     });
   });
 

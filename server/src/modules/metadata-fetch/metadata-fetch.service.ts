@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
+import { MangabakaCollectionSummary, MetadataCandidate, MetadataProviderKey } from '@bookorbit/types';
 import { from, merge, Observable, switchMap } from 'rxjs';
 
 import type { RequestUser } from '../../common/types/request-user';
@@ -10,6 +10,7 @@ import { ProviderThrottleTracker } from './provider-throttle.tracker';
 import { ProviderRegistry } from './provider-registry';
 import { PROVIDER_TIMEOUT_MS as PROVIDER_TIMEOUTS } from './providers/provider-constants';
 import { isIdentifiable, MetadataProvider } from './providers/metadata-provider';
+import { MangabakaProvider } from './providers/mangabaka/mangabaka.provider';
 import { MetadataSearchParams } from './providers/metadata-search-params';
 import { sanitizeLogError } from './providers/provider-utils';
 
@@ -47,6 +48,20 @@ export class MetadataFetchService {
     const provider = this.registry.find(key);
     if (!provider || !isIdentifiable(provider)) return null;
     return provider.lookupById(providerId);
+  }
+
+  async getMangabakaCollections(seriesId: number): Promise<MangabakaCollectionSummary[]> {
+    const provider = this.registry.find(MetadataProviderKey.MANGABAKA);
+    if (!provider) return [];
+    const mangabaka = provider as MangabakaProvider;
+    return mangabaka.fetchSeriesCollections(seriesId);
+  }
+
+  async getMangabakaWorks(collectionId: string, seriesId: number): Promise<MetadataCandidate[]> {
+    const provider = this.registry.find(MetadataProviderKey.MANGABAKA);
+    if (!provider) return [];
+    const mangabaka = provider as MangabakaProvider;
+    return mangabaka.fetchCollectionWorks(collectionId, seriesId);
   }
 
   async getStoredProviderIds(bookId: number, user: RequestUser): Promise<Partial<Record<MetadataProviderKey, string>>> {
