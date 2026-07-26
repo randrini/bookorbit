@@ -212,7 +212,9 @@ export function isSecondaryProviderIdPatchField(key: string): key is 'mangabakaS
   return SECONDARY_PROVIDER_ID_PATCH_FIELDS.has(key)
 }
 
-const PROVIDER_ID_PATCH_FIELDS = new Set<string>([...Object.values(PROVIDER_ID_FIELD), ...Object.values(SECONDARY_PROVIDER_ID_FIELDS)].filter((v): v is ProviderIdPatchField => v !== undefined))
+const PROVIDER_ID_PATCH_FIELDS = new Set<string>(
+  [...Object.values(PROVIDER_ID_FIELD), ...Object.values(SECONDARY_PROVIDER_ID_FIELDS)].filter((v): v is ProviderIdPatchField => v !== undefined),
+)
 
 export function isProviderIdPatchField(key: DiffFieldKey): key is ProviderIdPatchField {
   return PROVIDER_ID_PATCH_FIELDS.has(key)
