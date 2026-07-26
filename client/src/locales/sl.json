@@ -1321,6 +1321,10 @@
           "storeProviderIds": {
             "label": "Shrani ID-je ponudnikov na knjigah",
             "hint": "Ob pridobivanju metapodatkov shrani vrnjene ID-je ponudnikov (ISBN, ASIN, Goodreads ID itd.) na zapis knjige za natančnejše prihodnje iskanje."
+          },
+          "richTitleFormat": {
+            "label": "Bogato oblikovanje naslovov za manga zvezke",
+            "hint": "Oblikuj naslove zvezkov kot \"Serija, Zv. NN: Podnaslov, Gl. NNNN\" namesto preprostejšega \"Serija, Zv. NN - Gl. NNN\". Velja samo za MangaBaka."
           }
         },
         "library": {

@@ -1321,6 +1321,10 @@
           "storeProviderIds": {
             "label": "Provider-ID's op boeken opslaan",
             "hint": "Sla bij het ophalen van metadata de teruggegeven provider-ID's (ISBN, ASIN, Goodreads-ID, enz.) op in het boekrecord voor nauwkeurigere toekomstige zoekopdrachten."
+          },
+          "richTitleFormat": {
+            "label": "Uitgebreid titelformaat voor mangavolumes",
+            "hint": "Volumetitels opmaken als \"Serie, Bd. NN: Ondertitel, Hst. NNNN\" in plaats van het eenvoudigere \"Serie, Bd. NN - Hst. NNN\". Alleen van toepassing op MangaBaka."
           }
         },
         "library": {

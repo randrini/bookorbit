@@ -1321,6 +1321,10 @@
           "storeProviderIds": {
             "label": "Anbieter-IDs bei Büchern speichern",
             "hint": "Beim Abrufen von Metadaten die zurückgegebenen Anbieter-IDs (ISBN, ASIN, Goodreads-ID usw.) im Buchdatensatz speichern, für genauere zukünftige Suchen."
+          },
+          "richTitleFormat": {
+            "label": "Umfangreiches Titelformat für Manga-Bände",
+            "hint": "Bandtitel als \"Reihe, Bd. NN: Untertitel, Kap. NNNN\" anstelle des einfacheren \"Reihe, Bd. NN - Kap. NNN\" formatieren. Gilt nur für MangaBaka."
           }
         },
         "library": {

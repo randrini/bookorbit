@@ -144,6 +144,7 @@ export function useMetadataEditor() {
     lubimyczytacId: null as string | null,
     aladinId: null as string | null,
     mangabakaId: null as string | null,
+    mangabakaSeriesId: null as string | null,
     comicIssueNumber: null as string | null,
     comicVolumeName: null as string | null,
     comicStoryArcs: [] as string[],
@@ -200,6 +201,7 @@ export function useMetadataEditor() {
     form.lubimyczytacId = book.providerIds.lubimyczytac ?? null
     form.aladinId = book.providerIds.aladin ?? null
     form.mangabakaId = book.providerIds.mangabaka ?? null
+    form.mangabakaSeriesId = book.mangabakaSeriesId ?? null
     const cm = book.comicMetadata
     form.comicIssueNumber = cm?.issueNumber ?? null
     form.comicVolumeName = cm?.volumeName ?? null

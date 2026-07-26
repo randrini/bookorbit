@@ -1321,6 +1321,10 @@
           "storeProviderIds": {
             "label": "Armazenar IDs de provedores nos livros",
             "hint": "Ao buscar metadados, salvar os IDs de provedores retornados (ISBN, ASIN, ID do Goodreads, etc.) no registro do livro para futuras consultas mais precisas."
+          },
+          "richTitleFormat": {
+            "label": "Formato de título avançado para volumes de mangá",
+            "hint": "Formatar títulos de volumes como \"Série, Vol. NN: Subtítulo, Cap. NNNN\" em vez do formato simples \"Série, Vol. NN - Cap. NNN\". Aplica-se apenas ao MangaBaka."
           }
         },
         "library": {
