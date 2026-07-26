@@ -33,6 +33,7 @@ export type ResolvedMetadataFields = Partial<Record<MetadataField, string | stri
   chapters?: AudiobookChapter[];
   comicMetadata?: ComicMetadataFields;
   communityRatings?: BookCommunityRating[];
+  mangabakaSeriesId?: string | null;
 };
 
 export interface ExistingMetadataFields extends Partial<Record<MetadataField, unknown>> {
