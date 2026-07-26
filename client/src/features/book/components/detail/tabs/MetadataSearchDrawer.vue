@@ -45,6 +45,7 @@ const currentSource = computed<MetadataSource>(() => ({
   durationSeconds: props.book.audioMetadata?.durationSeconds ?? null,
   abridged: props.book.audioMetadata?.abridged ?? null,
   hardcoverEditionId: props.book.hardcoverEditionId,
+  mangabakaSeriesId: props.book.mangabakaSeriesId,
 }))
 
 const {

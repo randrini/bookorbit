@@ -26,4 +26,5 @@ export class UpdateWeightsDto {
   @IsInt() @Min(0) koboId!: number;
   @IsInt() @Min(0) aladinId!: number;
   @IsInt() @Min(0) mangabakaId!: number;
+  @IsInt() @Min(0) mangabakaSeriesId!: number;
 }

@@ -32,6 +32,7 @@ const METADATA_SCORE_BASE_SELECT = {
   koboId: bookMetadata.koboId,
   aladinId: bookMetadata.aladinId,
   mangabakaId: bookMetadata.mangabakaId,
+  mangabakaSeriesId: bookMetadata.mangabakaSeriesId,
 } as const;
 
 export type ScorePage = {

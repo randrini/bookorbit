@@ -47,6 +47,7 @@ const richMetadata: ParsedBookData = {
   lubimyczytacId: 'lubimyczytac-id',
   aladinId: 'aladin-id',
   mangabakaId: 'mangabaka-id',
+  mangabakaSeriesId: null,
   narrators: ['Simon Vance'],
   durationSeconds: 1200,
   chapters: [{ title: 'Chapter 1', startMs: 0 }],

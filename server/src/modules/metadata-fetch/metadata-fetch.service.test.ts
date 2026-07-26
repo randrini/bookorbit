@@ -486,6 +486,7 @@ describe('MetadataFetchService', () => {
       lubimyczytacId: 'lc-1',
       aladinId: null,
       mangabakaId: null,
+      mangabakaSeriesId: null,
     });
     metadataFetchRepository.hasLibraryAccess.mockResolvedValue(true);
 
@@ -527,6 +528,7 @@ describe('MetadataFetchService', () => {
       lubimyczytacId: null,
       aladinId: null,
       mangabakaId: null,
+      mangabakaSeriesId: null,
     });
 
     await expect(service.getStoredProviderIds(99, makeUser({ isSuperuser: true }))).resolves.toEqual({
@@ -571,6 +573,7 @@ describe('MetadataFetchService', () => {
       lubimyczytacId: null,
       aladinId: null,
       mangabakaId: null,
+      mangabakaSeriesId: null,
     });
     metadataFetchRepository.hasLibraryAccess.mockResolvedValue(false);
 

@@ -609,6 +609,7 @@ describe('BookMetadataFetchOrchestratorService', () => {
           lubimyczytacId: 'lubimyczytac-1',
           aladinId: 'aladin-1',
           mangabakaId: 'mangabaka-1',
+          mangabakaSeriesId: null,
         },
       },
       authorRows: [],

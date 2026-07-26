@@ -29,6 +29,7 @@ export interface ParsedOpf {
   lubimyczytacId: string | null;
   aladinId: string | null;
   mangabakaId: string | null;
+  mangabakaSeriesId: string | null;
   itunesId: string | null;
   customMetadata: Record<string, string>;
   coverHref: string | null;
@@ -328,6 +329,7 @@ export function parseOpf(xml: string): ParsedOpf {
   let schemeAladinId: string | null = null;
   let schemeItunesId: string | null = null;
   let schemeMangabakaId: string | null = null;
+  let schemeMangabakaSeriesId: string | null = null;
 
   let urnGoogleBooksId: string | null = null;
   let urnGoodreadsId: string | null = null;
@@ -341,6 +343,7 @@ export function parseOpf(xml: string): ParsedOpf {
   let urnAladinId: string | null = null;
   let urnItunesId: string | null = null;
   let urnMangabakaId: string | null = null;
+  let urnMangabakaSeriesId: string | null = null;
 
   // Calibre prefix:value identifiers have the lowest priority, after scheme and urn.
   const prefixIds: Partial<Record<ProviderKey, string>> = {};
@@ -374,6 +377,9 @@ export function parseOpf(xml: string): ParsedOpf {
     if (scheme === 'aladin') schemeAladinId ??= normalizeProviderId('aladin', value);
     if (scheme === 'itunes') schemeItunesId ??= normalizeProviderId('itunes', value);
     if (scheme === 'mangabaka') schemeMangabakaId ??= normalizeProviderId('mangabaka', value);
+    if (scheme === 'mangabaka_series' || scheme === 'mangabaka-series' || scheme === 'mangabakaseries') {
+      schemeMangabakaSeriesId ??= normalizeProviderId('mangabaka', value);
+    }
 
     // urn:-prefixed provider identifiers (legacy / backward-compat)
     if (lowerValue.startsWith('urn:goodreads:')) urnGoodreadsId ??= normalizeProviderId('goodreads', value);
@@ -389,6 +395,7 @@ export function parseOpf(xml: string): ParsedOpf {
     if (lowerValue.startsWith('urn:aladin:')) urnAladinId ??= normalizeProviderId('aladin', value);
     if (lowerValue.startsWith('urn:itunes:')) urnItunesId ??= normalizeProviderId('itunes', value);
     if (lowerValue.startsWith('urn:mangabaka:')) urnMangabakaId ??= normalizeProviderId('mangabaka', value);
+    if (lowerValue.startsWith('urn:mangabaka_series:')) urnMangabakaSeriesId ??= normalizeProviderId('mangabaka', value);
 
     // Calibre prefix:value only applies when there is no opf:scheme attribute and the value is not a urn.
     if (scheme === '' && !lowerValue.startsWith('urn:')) {
@@ -416,6 +423,7 @@ export function parseOpf(xml: string): ParsedOpf {
   const aladinId = schemeAladinId ?? urnAladinId ?? prefixIds.aladin ?? null;
   const itunesId = schemeItunesId ?? urnItunesId ?? prefixIds.itunes ?? null;
   const mangabakaId = schemeMangabakaId ?? urnMangabakaId ?? prefixIds.mangabaka ?? null;
+  const mangabakaSeriesId = schemeMangabakaSeriesId ?? urnMangabakaSeriesId ?? null;
 
   isbn10 ??= propertyMeta('bookorbit:isbn10') ?? namedMeta('bookorbit:isbn10');
 
@@ -545,6 +553,7 @@ export function parseOpf(xml: string): ParsedOpf {
     lubimyczytacId,
     aladinId,
     mangabakaId,
+    mangabakaSeriesId,
     itunesId,
     customMetadata,
     coverHref,

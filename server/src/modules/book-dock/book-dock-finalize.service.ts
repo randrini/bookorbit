@@ -105,6 +105,7 @@ type NormalizedFinalizeMetadata = {
   lubimyczytacId: string | null;
   aladinId: string | null;
   mangabakaId: string | null;
+  mangabakaSeriesId: string | null;
   seriesMemberships: MetadataSeriesMembership[] | undefined;
   communityRatings: Array<{ provider: MetadataProviderKey; rating: number; ratingCount: number | null }> | undefined;
   comicMetadata: ComicMetadataFields | undefined;
@@ -968,6 +969,7 @@ export class BookDockFinalizeService implements OnModuleInit, OnApplicationBoots
       lubimyczytacId: meta.lubimyczytacId,
       aladinId: meta.aladinId,
       mangabakaId: meta.mangabakaId,
+      mangabakaSeriesId: meta.mangabakaSeriesId,
       updatedAt: new Date(),
     };
     const patch = (await this.seriesIdentity?.resolveMetadataPatch(scalarFields)) ?? scalarFields;
@@ -1210,6 +1212,7 @@ function normalizeFinalizeMetadata(meta: BookDockMetadata | null | undefined): N
     lubimyczytacId: normalizeText(normalizedMeta?.lubimyczytacId, 512),
     aladinId: normalizeText(normalizedMeta?.aladinId, 20),
     mangabakaId: normalizeText(normalizedMeta?.mangabakaId, 50),
+    mangabakaSeriesId: normalizeText(normalizedMeta?.mangabakaSeriesId, 50),
     seriesMemberships: normalizeSeriesMemberships(normalizedMeta?.seriesMemberships),
     communityRatings: normalizeCommunityRatings(normalizedMeta?.communityRatings),
     comicMetadata: normalizeComicMetadata(normalizedMeta?.comicMetadata),

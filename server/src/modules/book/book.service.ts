@@ -1632,6 +1632,7 @@ export class BookService {
     if (dto.lubimyczytacId !== undefined) scalarFields.lubimyczytacId = dto.lubimyczytacId ?? null;
     if (dto.aladinId !== undefined) scalarFields.aladinId = dto.aladinId ?? null;
     if (dto.mangabakaId !== undefined) scalarFields.mangabakaId = dto.mangabakaId ?? null;
+    if (dto.mangabakaSeriesId !== undefined) scalarFields.mangabakaSeriesId = dto.mangabakaSeriesId ?? null;
     if (dto.rating !== undefined) scalarFields.rating = dto.rating ?? null;
     if (dto.audioMetadata) {
       if (dto.audioMetadata.durationSeconds !== undefined) scalarFields.durationSeconds = dto.audioMetadata.durationSeconds ?? null;
@@ -2996,6 +2997,7 @@ export class BookService {
         [MetadataProviderKey.ALADIN]: meta?.aladinId ?? null,
         [MetadataProviderKey.MANGABAKA]: meta?.mangabakaId ?? null,
       },
+      mangabakaSeriesId: meta?.mangabakaSeriesId ?? null,
       authors: authorRows,
       genres: genreRows.map((g) => g.name),
       tags: tagRows.map((t) => t.name),

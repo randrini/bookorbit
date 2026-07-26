@@ -240,6 +240,7 @@ const currentSource = computed<MetadataSource>(() => ({
   durationSeconds: passthroughMetadata.value.durationSeconds ?? null,
   abridged: passthroughMetadata.value.abridged ?? null,
   hardcoverEditionId: passthroughMetadata.value.hardcoverEditionId ?? null,
+  mangabakaSeriesId: passthroughMetadata.value.mangabakaSeriesId ?? null,
   communityRatings: (passthroughMetadata.value.communityRatings ?? []).map((rating) => ({
     ...rating,
     ratingCount: rating.ratingCount ?? null,

@@ -29,6 +29,7 @@ export interface BookWritePayload {
   lubimyczytacId?: string | null;
   aladinId?: string | null;
   mangabakaId?: string | null;
+  mangabakaSeriesId?: string | null;
   comicIssueNumber?: string | null;
   comicVolumeName?: string | null;
   comicPencillers?: string[];

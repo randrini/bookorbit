@@ -49,6 +49,7 @@ describe('BookDock metadata normalization', () => {
       lubimyczytacId: 'lubimyczytac-id',
       aladinId: 'aladin-id',
       mangabakaId: 'mangabaka-id',
+      mangabakaSeriesId: null,
       comicMetadata: { issueNumber: '1', pencillers: ['Artist'], unknown: true },
       unknown: 'remove me',
     };
@@ -90,6 +91,7 @@ describe('BookDock metadata normalization', () => {
       lubimyczytacId: 'lubimyczytac-id',
       aladinId: 'aladin-id',
       mangabakaId: 'mangabaka-id',
+      mangabakaSeriesId: null,
       comicMetadata: { issueNumber: '1', pencillers: ['Artist'] },
     };
 

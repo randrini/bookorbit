@@ -105,6 +105,4 @@ export interface SharedReadingInsightsViewSession {
 }
 
 export type ReadingInsightsPreview =
-  | ReadingInsightsSharingSettings
-  | SharedReadingInsightsSummary
-  | { summary: SharedReadingInsightsSummary; detail: SharedReadingInsightsDetail };
+  ReadingInsightsSharingSettings | SharedReadingInsightsSummary | { summary: SharedReadingInsightsSummary; detail: SharedReadingInsightsDetail };
