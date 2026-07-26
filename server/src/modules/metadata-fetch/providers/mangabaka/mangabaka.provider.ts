@@ -9,7 +9,7 @@ import { MetadataSearchParams } from '../metadata-search-params';
 import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
-import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
+import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection, type WorkTitleOptions } from './mangabaka.mapper';
 import { extractChapterNumber, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
@@ -43,6 +43,10 @@ export class MangabakaProvider implements IdentifiableProvider {
     if (!query) return [];
 
     const maxResults = normalizeMaxCandidates(params.maxCandidatesPerProvider, PROVIDER_LIMITS.MANGABAKA_MAX_RESULTS);
+    const titleOptions: WorkTitleOptions = {
+      richTitleFormat: params.richTitleFormat ?? true,
+      includeChapter: params.includeChapter ?? false,
+    };
 
     const startedAt = Date.now();
     this.logger.log(
@@ -64,7 +68,7 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     // Auto-fill mode: resolve from series to the matching volume work when possible.
     if (params.resolveVolumes && volumeNumber != null && candidates.length > 0) {
-      const resolved = await this.resolveVolumeCandidate(candidates[0], volumeNumber, params.signal);
+      const resolved = await this.resolveVolumeCandidate(candidates[0], volumeNumber, chapterNumber, titleOptions, params.signal);
       if (resolved) {
         this.logger.log(
           `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} resolvedVolume=${volumeNumber} - search completed (volume resolved)`,
@@ -85,6 +89,8 @@ export class MangabakaProvider implements IdentifiableProvider {
   private async resolveVolumeCandidate(
     seriesCandidate: MetadataCandidate,
     volumeNumber: number,
+    chapterNumber: number | undefined,
+    titleOptions: WorkTitleOptions,
     signal?: AbortSignal,
   ): Promise<MetadataCandidate | null> {
     const seriesId = Number(seriesCandidate.providerId);
@@ -106,7 +112,7 @@ export class MangabakaProvider implements IdentifiableProvider {
       const match = mainWorks.find((w) => w.sequence_numeric === volumeNumber);
       if (!match) return null;
 
-      const candidate = mapMangabakaWork(match, series);
+      const candidate = mapMangabakaWork(match, series, chapterNumber, titleOptions);
       return candidate;
     } catch (err) {
       if (err instanceof ProviderThrottleError) throw err;

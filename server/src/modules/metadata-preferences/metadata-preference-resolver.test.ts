@@ -78,6 +78,7 @@ describe('MetadataPreferenceResolver', () => {
     expect(defaults.options).toEqual({
       genres: { mode: 'merge', blocklist: [] },
       saveProviderIds: true,
+      richTitleFormat: true,
     });
   });
 
@@ -153,6 +154,7 @@ describe('MetadataPreferenceResolver', () => {
           blocklist: [' Audiobook ', 'adult', 'AUDIOBOOK', '', 'Graphic Novel'],
         },
         saveProviderIds: true,
+        richTitleFormat: true,
       },
     } as unknown as MetadataFetchPreferences;
 

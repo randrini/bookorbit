@@ -30,6 +30,7 @@ function withDefaultOptions(prefs: MetadataFetchPreferences): MetadataFetchPrefe
         blocklist: prefs.options?.genres.blocklist ?? [],
       },
       saveProviderIds: prefs.options?.saveProviderIds ?? true,
+      richTitleFormat: prefs.options?.richTitleFormat ?? true,
     },
   }
 }
@@ -60,6 +61,11 @@ function setGenreMerge(enabled: boolean) {
 function toggleSaveProviderIds() {
   if (!draft.value?.options) return
   draft.value.options.saveProviderIds = !draft.value.options.saveProviderIds
+}
+
+function toggleRichTitleFormat() {
+  if (!draft.value?.options) return
+  draft.value.options.richTitleFormat = !draft.value.options.richTitleFormat
 }
 
 function handleClearAll() {
@@ -181,6 +187,25 @@ function handleResetToDefault() {
                 <span class="text-sm font-medium text-foreground">{{ t('settings.metadata.fieldRules.advanced.storeProviderIds.label') }}</span>
                 <p class="text-xs text-muted-foreground">
                   {{ t('settings.metadata.fieldRules.advanced.storeProviderIds.hint') }}
+                </p>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-3 group cursor-pointer">
+              <div
+                class="relative flex h-5 w-9 shrink-0 items-center rounded-full transition-colors mt-0.5"
+                :class="draft.options?.richTitleFormat !== false ? 'bg-primary' : 'bg-muted border border-border'"
+                @click.prevent="toggleRichTitleFormat"
+              >
+                <span
+                  class="inline-block h-4 w-4 rounded-full bg-white shadow-xs transition-transform"
+                  :class="draft.options?.richTitleFormat !== false ? 'translate-x-4.5' : 'translate-x-0.5'"
+                />
+              </div>
+              <div class="space-y-1">
+                <span class="text-sm font-medium text-foreground">{{ t('settings.metadata.fieldRules.advanced.richTitleFormat.label') }}</span>
+                <p class="text-xs text-muted-foreground">
+                  {{ t('settings.metadata.fieldRules.advanced.richTitleFormat.hint') }}
                 </p>
               </div>
             </label>

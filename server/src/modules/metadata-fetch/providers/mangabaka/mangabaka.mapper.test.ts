@@ -513,7 +513,7 @@ describe('mapMangabakaWork', () => {
     expect(result).not.toBeNull();
     expect(result?.provider).toBe(MetadataProviderKey.MANGABAKA);
     expect(result?.providerId).toBe('019e1d69-4210-767b-acd5-1de151bd138b');
-    expect(result?.title).toBe('Dice, Vol. 01');
+    expect(result?.title).toBe('Dice, Vol. 01: The Evil Spirit');
     expect(result?.subtitle).toBe('The Evil Spirit');
     expect(result?.authors).toEqual(['Hyun-Seok Yun']);
     expect(result?.description).toBe('The first volume of Naruto.');
@@ -658,18 +658,40 @@ describe('mapMangabakaWork', () => {
     expect(result?.seriesMemberships).toEqual([{ seriesName: 'Dice', seriesIndex: 1 }]);
   });
 
-  it('formats title with volume and chapter when chapterNumber is provided', () => {
-    const result = mapMangabakaWork(mockWork, baseSeries, 3);
+  it('formats title with volume and chapter when chapterNumber is provided (rich format)', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries, 3, { richTitleFormat: true, includeChapter: true });
+    expect(result?.title).toBe('Dice, Vol. 01: The Evil Spirit, Ch 0003');
+  });
+
+  it('formats title with volume and chapter in flat format', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries, 3, { richTitleFormat: false });
     expect(result?.title).toBe('Dice, Vol. 01 - Ch 003');
   });
 
-  it('formats title with volume only when chapterNumber is undefined', () => {
+  it('formats title with volume and subtitle but no chapter when includeChapter is false', () => {
+    const result = mapMangabakaWork(mockWork, baseSeries, 3, { richTitleFormat: true, includeChapter: false });
+    expect(result?.title).toBe('Dice, Vol. 01: The Evil Spirit');
+  });
+
+  it('formats title with volume only when chapterNumber is undefined (rich format)', () => {
     const result = mapMangabakaWork(mockWork, baseSeries);
-    expect(result?.title).toBe('Dice, Vol. 01');
+    expect(result?.title).toBe('Dice, Vol. 01: The Evil Spirit');
   });
 
   it('formats title with volume only when chapterNumber is explicitly undefined', () => {
     const result = mapMangabakaWork(mockWork, baseSeries, undefined);
+    expect(result?.title).toBe('Dice, Vol. 01: The Evil Spirit');
+  });
+
+  it('omits subtitle from title when work has no sub_title', () => {
+    const work: MangabakaWork = { ...mockWork, sub_title: null };
+    const result = mapMangabakaWork(work, baseSeries);
+    expect(result?.title).toBe('Dice, Vol. 01');
+  });
+
+  it('omits subtitle in flat format', () => {
+    const work: MangabakaWork = { ...mockWork, sub_title: null };
+    const result = mapMangabakaWork(work, baseSeries, undefined, { richTitleFormat: false });
     expect(result?.title).toBe('Dice, Vol. 01');
   });
 });

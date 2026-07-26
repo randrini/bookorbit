@@ -210,18 +210,47 @@ export function pickBestCollection(collections: MangabakaCollection[], preferred
   return scored[0].collection;
 }
 
-function formatWorkTitle(seriesTitle: string, volumeNumber: number | undefined, chapterNumber?: number): string {
+export interface WorkTitleOptions {
+  /** When true, compose "Series, Vol. NN: Subtitle, Ch NNNN" with subtitle and
+   *  chapter. When false, use the simpler "Series, Vol. NN - Ch NNN" format. */
+  richTitleFormat?: boolean;
+  /** When true and chapterNumber is provided, include the chapter portion. */
+  includeChapter?: boolean;
+}
+
+function formatWorkTitle(
+  seriesTitle: string,
+  volumeNumber: number | undefined,
+  chapterNumber: number | undefined,
+  subtitle: string | undefined,
+  options: WorkTitleOptions = {},
+): string {
+  const { richTitleFormat = true, includeChapter = false } = options;
   let title = seriesTitle;
   if (volumeNumber !== undefined) {
     title += `, Vol. ${String(volumeNumber).padStart(2, '0')}`;
   }
-  if (chapterNumber !== undefined) {
-    title += ` - Ch ${String(chapterNumber).padStart(3, '0')}`;
+  if (richTitleFormat) {
+    if (subtitle && volumeNumber !== undefined) {
+      title += `: ${subtitle}`;
+    }
+    if (includeChapter && chapterNumber !== undefined) {
+      title += `, Ch ${String(chapterNumber).padStart(4, '0')}`;
+    }
+  } else {
+    if (chapterNumber !== undefined) {
+      title += ` - Ch ${String(chapterNumber).padStart(3, '0')}`;
+    }
   }
   return title;
 }
 
-export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries, chapterNumber?: number): MetadataCandidate | null {
+export function mapMangabakaWork(
+  work: MangabakaWork,
+  series: MangabakaSeries,
+  chapterNumber?: number,
+  options?: WorkTitleOptions,
+): MetadataCandidate | null {
   if (!work?.id) return null;
 
   const communityRating = normalizeCommunityRating(series.rating);
@@ -263,7 +292,7 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries, c
     provider: MetadataProviderKey.MANGABAKA,
     providerId: work.id,
     mangabakaSeriesId: String(series.id),
-    title: formatWorkTitle(resolveTitle(series), work.sequence_numeric, chapterNumber),
+    title: formatWorkTitle(resolveTitle(series), work.sequence_numeric, chapterNumber, work.sub_title ?? undefined, options),
     subtitle: work.sub_title ?? undefined,
     authors: resolveAuthors(series),
     description: work.description?.desc?.trim() || undefined,

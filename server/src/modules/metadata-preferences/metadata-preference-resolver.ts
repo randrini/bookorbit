@@ -74,6 +74,7 @@ export class MetadataPreferenceResolver {
         blocklist: [],
       },
       saveProviderIds: true,
+      richTitleFormat: true,
     };
     return { fields, options };
   }
@@ -132,7 +133,11 @@ export class MetadataPreferenceResolver {
 
   private normalizeOptions(value: unknown, fallback: MetadataFetchOptions): MetadataFetchOptions {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return { genres: { ...fallback.genres, blocklist: [...fallback.genres.blocklist] }, saveProviderIds: fallback.saveProviderIds };
+      return {
+        genres: { ...fallback.genres, blocklist: [...fallback.genres.blocklist] },
+        saveProviderIds: fallback.saveProviderIds,
+        richTitleFormat: fallback.richTitleFormat,
+      };
     }
 
     const candidate = value as Partial<MetadataFetchOptions>;
@@ -144,10 +149,12 @@ export class MetadataPreferenceResolver {
       : fallback.genres.mode;
     const blocklist = normalizeGenreBlocklist(genresCandidate.blocklist, fallback.genres.blocklist);
     const saveProviderIds = typeof candidate.saveProviderIds === 'boolean' ? candidate.saveProviderIds : fallback.saveProviderIds;
+    const richTitleFormat = typeof candidate.richTitleFormat === 'boolean' ? candidate.richTitleFormat : fallback.richTitleFormat;
 
     return {
       genres: { mode, blocklist },
       saveProviderIds,
+      richTitleFormat,
     };
   }
 }

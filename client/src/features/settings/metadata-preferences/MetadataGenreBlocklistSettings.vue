@@ -64,6 +64,7 @@ function withBlocklist(prefs: MetadataFetchPreferences, blocklist: string[]): Me
         blocklist,
       },
       saveProviderIds: prefs.options?.saveProviderIds ?? true,
+      richTitleFormat: prefs.options?.richTitleFormat ?? true,
     },
   }
 }

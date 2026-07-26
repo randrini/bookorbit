@@ -56,6 +56,9 @@ export interface MetadataFetchOptions {
     blocklist: string[];
   };
   saveProviderIds: boolean;
+  /** When true, MangaBaka volume titles use "Series, Vol. NN: Subtitle, Ch NNNN"
+   *  format with subtitle and chapter. When false, uses simpler "Series, Vol. NN - Ch NNN". */
+  richTitleFormat?: boolean;
 }
 
 export interface MetadataFetchPreferences {

@@ -1312,6 +1312,10 @@
           "storeProviderIds": {
             "label": "Store provider IDs on books",
             "hint": "When fetching metadata, save the returned provider IDs (ISBN, ASIN, Goodreads ID, etc.) on the book record for more accurate future lookups."
+          },
+          "richTitleFormat": {
+            "label": "Rich title format for manga volumes",
+            "hint": "Compose volume titles as \"Series, Vol. NN: Subtitle, Ch NNNN\" instead of the simpler \"Series, Vol. NN - Ch NNN\". Applies to MangaBaka only."
           }
         },
         "library": {
