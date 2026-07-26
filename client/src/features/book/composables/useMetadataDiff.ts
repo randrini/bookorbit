@@ -181,6 +181,7 @@ export type ProviderIdPatchField =
   | 'lubimyczytacId'
   | 'aladinId'
   | 'mangabakaId'
+  | 'mangabakaSeriesId'
 
 export const PROVIDER_ID_FIELD: Record<MetadataProviderKey, ProviderIdPatchField | undefined> = {
   google: 'googleBooksId',
@@ -200,7 +201,18 @@ export const PROVIDER_ID_FIELD: Record<MetadataProviderKey, ProviderIdPatchField
   mangabaka: 'mangabakaId',
 }
 
-const PROVIDER_ID_PATCH_FIELDS = new Set<string>(Object.values(PROVIDER_ID_FIELD).filter((v): v is ProviderIdPatchField => v !== undefined))
+/** Secondary provider ID fields that are not the primary identifier for a provider. */
+const SECONDARY_PROVIDER_ID_FIELDS: Record<string, ProviderIdPatchField> = {
+  mangabaka: 'mangabakaSeriesId',
+}
+
+const SECONDARY_PROVIDER_ID_PATCH_FIELDS = new Set<string>(Object.values(SECONDARY_PROVIDER_ID_FIELDS))
+
+export function isSecondaryProviderIdPatchField(key: string): key is 'mangabakaSeriesId' {
+  return SECONDARY_PROVIDER_ID_PATCH_FIELDS.has(key)
+}
+
+const PROVIDER_ID_PATCH_FIELDS = new Set<string>([...Object.values(PROVIDER_ID_FIELD), ...Object.values(SECONDARY_PROVIDER_ID_FIELDS)].filter((v): v is ProviderIdPatchField => v !== undefined))
 
 export function isProviderIdPatchField(key: DiffFieldKey): key is ProviderIdPatchField {
   return PROVIDER_ID_PATCH_FIELDS.has(key)

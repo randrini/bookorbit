@@ -158,5 +158,6 @@ export interface MetadataSource {
   durationSeconds: number | null;
   abridged: boolean | null;
   hardcoverEditionId: string | null;
+  mangabakaSeriesId: string | null;
   communityRatings: BookCommunityRating[];
 }
