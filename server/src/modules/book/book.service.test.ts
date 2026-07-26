@@ -940,6 +940,7 @@ describe('BookService', () => {
           },
           isAudiobook: false,
           maxCandidatesPerProvider: 1,
+          resolveVolumes: true,
         },
         {
           title: 'Old Title',
