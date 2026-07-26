@@ -89,6 +89,7 @@ export interface MetadataCandidate {
   comicMetadata?: ComicMetadataFields;
   communityRating?: number;
   communityRatingCount?: number;
+  mangabakaSeriesId?: string;
 }
 
 export interface MetadataProviderInfo {

@@ -1,0 +1,1 @@
+ALTER TABLE "book_metadata" ADD COLUMN "mangabaka_series_id" varchar(50);

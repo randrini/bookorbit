@@ -393,6 +393,13 @@
       "when": 1784826014479,
       "tag": "0055_add_mangabaka_id",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1785075105246,
+      "tag": "0056_add_mangabaka_series_id",
+      "breakpoints": true
     }
   ]
 }

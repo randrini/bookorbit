@@ -9,7 +9,7 @@ import { MetadataSearchParams } from '../metadata-search-params';
 import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
-import { mapMangabakaSeries, mapMangabakaWork } from './mangabaka.mapper';
+import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection } from './mangabaka.mapper';
 import { extractChapterNumber, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
@@ -46,7 +46,7 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     const startedAt = Date.now();
     this.logger.log(
-      `[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} chapterNumber=${chapterNumber ?? 'none'} - search started`,
+      `[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} chapterNumber=${chapterNumber ?? 'none'} resolveVolumes=${params.resolveVolumes ?? false} - search started`,
     );
 
     // Prefer the stable /v1/series/search endpoint (returns full series objects).
@@ -61,8 +61,62 @@ export class MangabakaProvider implements IdentifiableProvider {
       const candidate = mapMangabakaSeries(s);
       if (candidate) candidates.push(candidate);
     }
+
+    // Auto-fill mode: resolve from series to the matching volume work when possible.
+    if (params.resolveVolumes && volumeNumber != null && candidates.length > 0) {
+      const resolved = await this.resolveVolumeCandidate(candidates[0], volumeNumber, params.signal);
+      if (resolved) {
+        this.logger.log(
+          `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} resolvedVolume=${volumeNumber} - search completed (volume resolved)`,
+        );
+        return [resolved, ...candidates.slice(1)];
+      }
+    }
+
     this.logger.log(`[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} - search completed`);
     return candidates;
+  }
+
+  /**
+   * For auto-fill: given a series candidate and a volume number, find the best
+   * matching volume (work) candidate. Returns null if resolution fails, which
+   * causes the caller to fall back to the series-level candidate.
+   */
+  private async resolveVolumeCandidate(
+    seriesCandidate: MetadataCandidate,
+    volumeNumber: number,
+    signal?: AbortSignal,
+  ): Promise<MetadataCandidate | null> {
+    const seriesId = Number(seriesCandidate.providerId);
+    if (!Number.isSafeInteger(seriesId) || seriesId <= 0) return null;
+
+    try {
+      const collections = await this.client.fetchCollections(seriesId, signal);
+      if (!collections.length) return null;
+
+      const best = pickBestCollection(collections);
+      if (!best) return null;
+
+      const series = await this.client.fetchSeries(seriesId, signal);
+      if (!series) return null;
+
+      const works = await this.client.fetchWorks(best.id, signal);
+      const mainWorks = works.filter((w) => w.count_type === 'main');
+
+      const match = mainWorks.find((w) => w.sequence_numeric === volumeNumber);
+      if (!match) return null;
+
+      const candidate = mapMangabakaWork(match, series);
+      return candidate;
+    } catch (err) {
+      if (err instanceof ProviderThrottleError) throw err;
+      const errorClass = err instanceof Error ? err.constructor.name : 'Unknown';
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `[MangaBaka.resolveVolume] [fail] seriesId=${seriesId} volumeNumber=${volumeNumber} errorClass=${errorClass} error="${sanitizeLogValue(errorMessage)}" - volume resolution failed, falling back to series`,
+      );
+      return null;
+    }
   }
 
   async fetchSeriesCollections(seriesId: number, signal?: AbortSignal): Promise<MangabakaCollectionSummary[]> {

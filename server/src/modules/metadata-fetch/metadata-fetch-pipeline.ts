@@ -352,6 +352,13 @@ export class MetadataFetchPipeline {
         ) {
           result.hardcoverEditionId = candidate.hardcoverEditionId;
         }
+        if (
+          candidate.provider === MetadataProviderKey.MANGABAKA &&
+          candidate.mangabakaSeriesId &&
+          (!options?.preserveExisting || this.isMissing((existing as Record<string, unknown>).mangabakaSeriesId))
+        ) {
+          (result as Record<string, unknown>).mangabakaSeriesId = candidate.mangabakaSeriesId;
+        }
       }
     }
 

@@ -9,6 +9,9 @@ export interface MetadataSearchParams {
   // Hint for providers to cap deep candidate exploration in non-interactive flows
   // (e.g. auto-fill/background refresh where there is no manual candidate picking).
   maxCandidatesPerProvider?: number;
+  // When true, providers that return series-level results should resolve to the
+  // best-matching volume/issue candidate when a volume number is available.
+  resolveVolumes?: boolean;
   // Internal-only signal used by orchestration timeout/cancellation.
   signal?: AbortSignal;
 }

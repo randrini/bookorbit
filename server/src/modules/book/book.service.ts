@@ -302,6 +302,7 @@ export class BookService {
     lubimyczytacId?: string | null;
     aladinId?: string | null;
     mangabakaId?: string | null;
+    mangabakaSeriesId?: string | null;
   }): Partial<Record<MetadataProviderKey, string>> {
     const providerIds: Partial<Record<MetadataProviderKey, string>> = {};
     if (meta.googleBooksId) providerIds[MetadataProviderKey.GOOGLE] = meta.googleBooksId;
@@ -339,6 +340,7 @@ export class BookService {
       | 'lubimyczytacId'
       | 'aladinId'
       | 'mangabakaId'
+      | 'mangabakaSeriesId'
     >,
     providerIds: Partial<Record<MetadataProviderKey, string>>,
   ): void {
@@ -356,6 +358,8 @@ export class BookService {
     if (providerIds[MetadataProviderKey.LUBIMYCZYTAC]) dto.lubimyczytacId = providerIds[MetadataProviderKey.LUBIMYCZYTAC];
     if (providerIds[MetadataProviderKey.ALADIN]) dto.aladinId = providerIds[MetadataProviderKey.ALADIN];
     if (providerIds[MetadataProviderKey.MANGABAKA]) dto.mangabakaId = providerIds[MetadataProviderKey.MANGABAKA];
+    // mangabakaSeriesId is handled as a special field like hardcoverEditionId,
+    // not as a standard provider ID lookup key.
   }
 
   private buildMetadataRefreshPreview(
@@ -381,6 +385,7 @@ export class BookService {
     if (r.seriesMemberships !== undefined) preview.seriesMemberships = r.seriesMemberships as BookMetadataRefreshPreviewFields['seriesMemberships'];
     if (r.coverUrl !== undefined) preview.coverUrl = r.coverUrl as string;
     if (r.hardcoverEditionId !== undefined) preview.hardcoverEditionId = r.hardcoverEditionId as string | null;
+    if (r.mangabakaSeriesId !== undefined) preview.mangabakaSeriesId = r.mangabakaSeriesId as string | null;
     if (r.comicMetadata !== undefined) preview.comicMetadata = r.comicMetadata as BookMetadataRefreshPreviewFields['comicMetadata'];
 
     if (r.narrators !== undefined || r.duration !== undefined || r.abridged !== undefined || r.chapters !== undefined) {
@@ -2580,6 +2585,7 @@ export class BookService {
         existingProviderIds: providerIds,
         isAudiobook: (meta?.durationSeconds !== null && meta?.durationSeconds !== undefined) || !!meta?.audibleId || !!meta?.librofmId,
         maxCandidatesPerProvider: 1,
+        resolveVolumes: true,
       };
 
       const existingFields: Partial<Record<MetadataField, unknown>> = {
@@ -2638,6 +2644,7 @@ export class BookService {
       if (r.seriesIndex !== undefined) dto.seriesIndex = r.seriesIndex as number | null;
       if (r.seriesMemberships !== undefined) dto.seriesMemberships = r.seriesMemberships as UpdateBookMetadataDto['seriesMemberships'];
       if (r.hardcoverEditionId !== undefined) dto.hardcoverEditionId = r.hardcoverEditionId as string | null;
+      if (r.mangabakaSeriesId !== undefined) dto.mangabakaSeriesId = r.mangabakaSeriesId as string | null;
       if (r.narrators !== undefined || r.duration !== undefined || r.abridged !== undefined || r.chapters !== undefined) {
         dto.audioMetadata = {};
         if (r.narrators !== undefined) dto.audioMetadata.narrators = r.narrators as string[];

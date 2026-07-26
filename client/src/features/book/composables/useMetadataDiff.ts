@@ -111,6 +111,7 @@ export interface MetadataPatch {
   lubimyczytacId?: string | null
   aladinId?: string | null
   mangabakaId?: string | null
+  mangabakaSeriesId?: string | null
   comicMetadata?: ComicMetadataFields
   customMetadata?: CustomMetadataBookValueInput[]
 }
@@ -606,6 +607,14 @@ export function useMetadataDiff(
         !lockedFieldSet.value.has('hardcoverEditionId')
       ) {
         formPatch.hardcoverEditionId = candidate.hardcoverEditionId
+      }
+      if (
+        provider === 'mangabaka' &&
+        candidate.mangabakaSeriesId &&
+        formPatch.mangabakaSeriesId === undefined &&
+        !lockedFieldSet.value.has('mangabakaSeriesId')
+      ) {
+        formPatch.mangabakaSeriesId = candidate.mangabakaSeriesId
       }
     }
 

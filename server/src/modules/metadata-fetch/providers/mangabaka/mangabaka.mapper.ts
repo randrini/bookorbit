@@ -262,6 +262,7 @@ export function mapMangabakaWork(work: MangabakaWork, series: MangabakaSeries, c
   return {
     provider: MetadataProviderKey.MANGABAKA,
     providerId: work.id,
+    mangabakaSeriesId: String(series.id),
     title: formatWorkTitle(resolveTitle(series), work.sequence_numeric, chapterNumber),
     subtitle: work.sub_title ?? undefined,
     authors: resolveAuthors(series),
