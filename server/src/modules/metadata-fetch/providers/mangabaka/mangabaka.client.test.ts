@@ -313,6 +313,84 @@ describe('MangabakaClient', () => {
 
       await expect(client.fetchCollections(1)).rejects.toThrow(ProviderThrottleError);
     });
+
+    it('uses cache on second call within TTL', async () => {
+      const mockCollections = [{ id: 'col-1', series_id: 1, title: 'Naruto Vol. 1', type: 'volume' }];
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: mockCollections }),
+      } as Response);
+
+      const result1 = await client.fetchCollections(1);
+      expect(result1).toEqual(mockCollections);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Second call should use cache
+      const result2 = await client.fetchCollections(1);
+      expect(result2).toEqual(mockCollections);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-fetches after TTL expires', async () => {
+      const mockCollections1 = [{ id: 'col-1', series_id: 1, title: 'Vol. 1', type: 'volume' }];
+      const mockCollections2 = [{ id: 'col-2', series_id: 1, title: 'Vol. 2', type: 'volume' }];
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ status: 200, data: mockCollections1 }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ status: 200, data: mockCollections2 }),
+        } as Response);
+
+      const result1 = await client.fetchCollections(1);
+      expect(result1).toEqual(mockCollections1);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Advance time past TTL (10 min = 600000ms)
+      const realDateNow = Date.now;
+      const now = realDateNow();
+      vi.spyOn(Date, 'now').mockReturnValue(now + 600_001);
+
+      const result2 = await client.fetchCollections(1);
+      expect(result2).toEqual(mockCollections2);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      vi.restoreAllMocks();
+    });
+
+    it('LRU evicts oldest entry when cache exceeds max size', async () => {
+      // Insert 501 entries - the oldest should be evicted
+      for (let i = 0; i < 501; i++) {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ status: 200, data: [{ id: `col-${i}`, series_id: i }] }),
+        } as Response);
+      }
+
+      // Insert 501 entries
+      for (let i = 0; i < 501; i++) {
+        await client.fetchCollections(i);
+      }
+
+      // Entry 0 should be evicted, so fetching it again should hit the network
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 200, data: [{ id: 'col-reload', series_id: 0 }] }),
+      } as Response);
+
+      const result = await client.fetchCollections(0);
+      expect(result).toEqual([{ id: 'col-reload', series_id: 0 }]);
+      // 501 initial + 1 re-fetch = 502 total calls
+      expect(mockFetch).toHaveBeenCalledTimes(502);
+    });
   });
 
   describe('fetchWorks()', () => {
@@ -446,6 +524,51 @@ describe('MangabakaClient', () => {
       mockFetch.mockRejectedValue(new ProviderThrottleError(1000));
 
       await expect(client.fetchWorks('col-1')).rejects.toThrow(ProviderThrottleError);
+    });
+
+    it('returns partial results when signal aborted mid-pagination', async () => {
+      const page1Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i }));
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ status: 200, data: page1Works, pagination: { count: 200, page: 1, limit: 50, next: 'page=2', previous: null } }),
+      } as Response);
+
+      const controller = new AbortController();
+      // Abort before second page fetch
+      controller.abort();
+
+      const result = await client.fetchWorks('col-1', controller.signal);
+      expect(result).toHaveLength(50);
+    });
+
+    it('caps pagination at 50 pages when API reports more', async () => {
+      const page1Works = Array.from({ length: 50 }, (_, i) => ({ id: `work-${i}`, series_id: 1, sequence_numeric: i }));
+
+      // API reports 10000 works = 200 pages, but we cap at 50
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ status: 200, data: page1Works, pagination: { count: 10000, page: 1, limit: 50, next: 'page=2', previous: null } }),
+      } as Response);
+
+      // Mock remaining 49 pages (pages 2-50)
+      for (let i = 0; i < 49; i++) {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ status: 200, data: page1Works, pagination: { count: 10000, page: i + 2, limit: 50, next: null, previous: null } }),
+        } as Response);
+      }
+
+      const result = await client.fetchWorks('col-1');
+      // 50 pages * 50 works = 2500 works
+      expect(result).toHaveLength(2500);
+      expect(mockFetch).toHaveBeenCalledTimes(50);
     });
   });
 

@@ -250,12 +250,13 @@ export function mapMangabakaWork(
   series: MangabakaSeries,
   chapterNumber?: number,
   options?: WorkTitleOptions,
+  preferredLanguage?: string,
 ): MetadataCandidate | null {
   if (!work?.id) return null;
 
   const communityRating = normalizeCommunityRating(series.rating);
   const communityRatingCount = series.popularity?.global?.current;
-  const bestCollection = work.collections?.length ? pickBestCollection(work.collections) : null;
+  const bestCollection = work.collections?.length ? pickBestCollection(work.collections, preferredLanguage) : null;
 
   let isbn10: string | undefined;
   let isbn13: string | undefined;

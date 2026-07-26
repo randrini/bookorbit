@@ -68,7 +68,14 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     // Auto-fill mode: resolve from series to the matching volume work when possible.
     if (params.resolveVolumes && volumeNumber != null && candidates.length > 0) {
-      const resolved = await this.resolveVolumeCandidate(candidates[0], volumeNumber, chapterNumber, titleOptions, params.signal);
+      const resolved = await this.resolveVolumeCandidate(
+        candidates[0],
+        volumeNumber,
+        chapterNumber,
+        titleOptions,
+        params.preferredLanguage,
+        params.signal,
+      );
       if (resolved) {
         this.logger.log(
           `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} resolvedVolume=${volumeNumber} - search completed (volume resolved)`,
@@ -91,6 +98,7 @@ export class MangabakaProvider implements IdentifiableProvider {
     volumeNumber: number,
     chapterNumber: number | undefined,
     titleOptions: WorkTitleOptions,
+    preferredLanguage?: string,
     signal?: AbortSignal,
   ): Promise<MetadataCandidate | null> {
     const seriesId = Number(seriesCandidate.providerId);
@@ -100,7 +108,7 @@ export class MangabakaProvider implements IdentifiableProvider {
       const collections = await this.client.fetchCollections(seriesId, signal);
       if (!collections.length) return null;
 
-      const best = pickBestCollection(collections);
+      const best = pickBestCollection(collections, preferredLanguage);
       if (!best) return null;
 
       const series = await this.client.fetchSeries(seriesId, signal);
@@ -112,7 +120,7 @@ export class MangabakaProvider implements IdentifiableProvider {
       const match = mainWorks.find((w) => w.sequence_numeric === volumeNumber);
       if (!match) return null;
 
-      const candidate = mapMangabakaWork(match, series, chapterNumber, titleOptions);
+      const candidate = mapMangabakaWork(match, series, chapterNumber, titleOptions, preferredLanguage);
       return candidate;
     } catch (err) {
       if (err instanceof ProviderThrottleError) throw err;
@@ -160,7 +168,7 @@ export class MangabakaProvider implements IdentifiableProvider {
     }
   }
 
-  async fetchCollectionWorks(collectionId: string, seriesId: number, signal?: AbortSignal): Promise<MetadataCandidate[]> {
+  async fetchCollectionWorks(collectionId: string, seriesId: number, preferredLanguage?: string, signal?: AbortSignal): Promise<MetadataCandidate[]> {
     const { enabled } = await this.providerConfig.getConfig().then((c) => c.mangabaka);
     if (!enabled) return [];
 
@@ -182,7 +190,7 @@ export class MangabakaProvider implements IdentifiableProvider {
       const mainWorks = works.filter((w) => w.count_type === 'main');
       const candidates: MetadataCandidate[] = [];
       for (const work of mainWorks) {
-        const candidate = mapMangabakaWork(work, series);
+        const candidate = mapMangabakaWork(work, series, undefined, undefined, preferredLanguage);
         if (candidate) candidates.push(candidate);
       }
       this.logger.log(

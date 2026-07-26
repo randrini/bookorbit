@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { ChevronDown, ChevronUp, Loader2 } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
+import { ChevronDown, ChevronUp, Loader2, AlertCircle, RefreshCw } from '@lucide/vue'
 import type { MangabakaCollectionSummary, MetadataCandidate } from '@bookorbit/types'
 import type { MangabakaDrillDown } from '../../../composables/useMangabakaDrillDown'
 import MangabakaVolumeCard from './MangabakaVolumeCard.vue'
@@ -12,11 +13,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{ select: [MetadataCandidate] }>()
 
+const { t } = useI18n()
 const providerId = computed(() => props.seriesCandidate.providerId)
 const seriesId = computed(() => Number(props.seriesCandidate.providerId))
 const isExpanded = computed(() => props.drillDown.isSeriesExpanded(providerId.value))
 const isLoading = computed(() => props.drillDown.isLoadingSeries(providerId.value))
 const collections = computed(() => props.drillDown.collectionsBySeries.value.get(providerId.value) ?? [])
+const seriesError = computed(() => props.drillDown.seriesErrors.value.get(providerId.value))
 
 function handleToggleSeries() {
   props.drillDown.expandSeries(providerId.value, seriesId.value)
@@ -24,6 +27,14 @@ function handleToggleSeries() {
 
 function handleToggleCollection(collection: MangabakaCollectionSummary) {
   props.drillDown.expandCollection(providerId.value, collection.id, seriesId.value)
+}
+
+function handleRetrySeries() {
+  props.drillDown.retrySeries(providerId.value, seriesId.value)
+}
+
+function handleRetryCollection(collection: MangabakaCollectionSummary) {
+  props.drillDown.retryCollection(providerId.value, collection.id, seriesId.value)
 }
 
 function handleSelectVolume(candidate: MetadataCandidate) {
@@ -40,6 +51,10 @@ function isCollectionLoading(collection: MangabakaCollectionSummary) {
 
 function collectionWorks(collection: MangabakaCollectionSummary) {
   return props.drillDown.worksByCollection.value.get(collection.id) ?? []
+}
+
+function collectionError(collection: MangabakaCollectionSummary) {
+  return props.drillDown.collectionErrors.value.get(collection.id)
 }
 
 function collectionTotalCount(collection: MangabakaCollectionSummary): number {
@@ -74,35 +89,62 @@ watch(
 <template>
   <div class="rounded-xl border border-border bg-card overflow-hidden">
     <button
-      class="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+      type="button"
+      class="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      :aria-expanded="isExpanded"
+      :aria-controls="'series-panel-' + seriesCandidate.providerId"
       @click="handleToggleSeries"
     >
       <span class="min-w-0 flex-1">
-        <span class="text-sm font-semibold text-foreground truncate block">{{ seriesCandidate.title }}</span>
-        <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">MangaBaka series</span>
+        <h3 class="text-sm font-semibold text-foreground truncate block">{{ seriesCandidate.title }}</h3>
+        <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+          {{ t('book.detail.editMetadata.mangabakaDrillDown.seriesLabel') }}
+        </span>
       </span>
       <span class="flex items-center gap-2 shrink-0">
-        <span class="text-xs text-muted-foreground">Browse Volumes</span>
+        <span class="text-xs text-muted-foreground">{{ t('book.detail.editMetadata.mangabakaDrillDown.browseVolumes') }}</span>
         <component :is="isExpanded ? ChevronUp : ChevronDown" class="size-4 text-muted-foreground" />
       </span>
     </button>
 
-    <div v-if="isExpanded" class="border-t border-border px-3 pb-3">
-      <div v-if="isLoading" class="flex items-center gap-2 py-6 text-sm text-muted-foreground justify-center">
+    <div v-if="isExpanded" :id="'series-panel-' + seriesCandidate.providerId" class="border-t border-border px-3 pb-3" aria-live="polite">
+      <div v-if="isLoading" aria-busy="true" class="flex items-center gap-2 py-6 text-sm text-muted-foreground justify-center">
         <Loader2 class="size-4 animate-spin" />
-        Loading collections...
+        {{ t('book.detail.editMetadata.mangabakaDrillDown.loadingCollections') }}
       </div>
 
-      <div v-else-if="!collections.length" class="py-6 text-center text-sm text-muted-foreground">No collections found for this series.</div>
+      <div v-else-if="seriesError" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3 mt-3" role="alert">
+        <div class="flex items-start gap-2">
+          <AlertCircle class="size-4 text-destructive shrink-0 mt-0.5" />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-destructive">{{ seriesError }}</p>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-destructive hover:text-destructive/80 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+              @click="handleRetrySeries"
+            >
+              <RefreshCw class="size-3.5" />
+              {{ t('book.detail.editMetadata.mangabakaDrillDown.retry') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="!collections.length" class="py-6 text-center text-sm text-muted-foreground">
+        {{ t('book.detail.editMetadata.mangabakaDrillDown.noCollections') }}
+      </div>
 
       <div v-else class="space-y-2 pt-2">
         <div v-for="collection in collections" :key="collection.id" class="rounded-lg border border-border/60 overflow-hidden">
           <button
-            class="w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40"
+            type="button"
+            class="w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            :aria-expanded="isCollectionExpanded(collection)"
+            :aria-controls="'collection-panel-' + collection.id"
             @click="handleToggleCollection(collection)"
           >
             <span class="min-w-0 flex-1 flex flex-col gap-0.5">
-              <span class="text-sm font-medium text-foreground truncate">{{ collection.title }}</span>
+              <h4 class="text-sm font-medium text-foreground truncate">{{ collection.title }}</h4>
               <span class="flex items-center gap-1.5 flex-wrap">
                 <span
                   class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase"
@@ -113,24 +155,56 @@ watch(
                 <span v-if="collection.publisher" class="text-[10px] text-muted-foreground truncate max-w-[120px]">
                   {{ collection.publisher }}
                 </span>
-                <span class="text-[10px] text-muted-foreground tabular-nums"> {{ collectionTotalCount(collection) }} volumes </span>
+                <span class="text-[10px] text-muted-foreground tabular-nums">
+                  {{ t('book.detail.editMetadata.mangabakaDrillDown.volumeLabel', { n: collectionTotalCount(collection) }) }}
+                </span>
               </span>
             </span>
             <component :is="isCollectionExpanded(collection) ? ChevronUp : ChevronDown" class="size-4 text-muted-foreground shrink-0" />
           </button>
 
-          <div v-if="isCollectionExpanded(collection)" class="border-t border-border/60 bg-muted/20 px-2 py-2">
-            <div v-if="isCollectionLoading(collection)" class="flex items-center gap-2 py-4 text-xs text-muted-foreground justify-center">
+          <div
+            v-if="isCollectionExpanded(collection)"
+            :id="'collection-panel-' + collection.id"
+            class="border-t border-border/60 bg-muted/20 px-2 py-2"
+            aria-live="polite"
+          >
+            <div
+              v-if="isCollectionLoading(collection)"
+              aria-busy="true"
+              class="flex items-center gap-2 py-4 text-xs text-muted-foreground justify-center"
+            >
               <Loader2 class="size-3.5 animate-spin" />
-              Loading volumes...
+              {{ t('book.detail.editMetadata.mangabakaDrillDown.loadingVolumes') }}
             </div>
 
-            <div v-else-if="!collectionWorks(collection).length" class="py-4 text-center text-xs text-muted-foreground">No volumes found.</div>
+            <div v-else-if="collectionError(collection)" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3" role="alert">
+              <div class="flex items-start gap-2">
+                <AlertCircle class="size-4 text-destructive shrink-0 mt-0.5" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-destructive">{{ collectionError(collection) }}</p>
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-destructive hover:text-destructive/80 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                    @click="handleRetryCollection(collection)"
+                  >
+                    <RefreshCw class="size-3.5" />
+                    {{ t('book.detail.editMetadata.mangabakaDrillDown.retry') }}
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+            <div v-else-if="!collectionWorks(collection).length" class="py-4 text-center text-xs text-muted-foreground">
+              {{ t('book.detail.editMetadata.mangabakaDrillDown.noVolumes') }}
+            </div>
+
+            <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2" role="list">
               <MangabakaVolumeCard
                 v-for="work in collectionWorks(collection)"
                 :key="work.providerId"
+                role="listitem"
+                :series-name="seriesCandidate.title"
                 :candidate="work"
                 :is-highlighted="isHighlightedVolume(work)"
                 @select="handleSelectVolume"

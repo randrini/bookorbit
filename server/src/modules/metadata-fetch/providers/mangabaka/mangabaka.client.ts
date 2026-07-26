@@ -11,6 +11,44 @@ const BASE_URL = 'https://api.mangabaka.org';
 const USER_AGENT = 'bookorbit/1.0 (+https://github.com/bookorbit/bookorbit)';
 
 const COLLECTIONS_CACHE_TTL_MS = 10 * 60 * 1000;
+const COLLECTIONS_CACHE_MAX_SIZE = 500;
+
+/**
+ * Simple LRU map that evicts the oldest entry when size exceeds maxSize.
+ * Uses Map's insertion order: on get, delete+re-set to move to end.
+ */
+class LruMap<V> {
+  private readonly map = new Map<number, V>();
+
+  constructor(private readonly maxSize: number) {}
+
+  get(key: number): V | undefined {
+    const value = this.map.get(key);
+    if (value !== undefined) {
+      // Move to end (most recently used)
+      this.map.delete(key);
+      this.map.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: number, value: V): void {
+    if (this.map.has(key)) {
+      this.map.delete(key);
+    } else if (this.map.size >= this.maxSize) {
+      // Evict oldest (first key in insertion order)
+      const oldestKey = this.map.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.map.delete(oldestKey);
+      }
+    }
+    this.map.set(key, value);
+  }
+
+  delete(key: number): void {
+    this.map.delete(key);
+  }
+}
 
 class RateLimiter {
   private nextAllowedTime = 0;
@@ -30,7 +68,7 @@ class RateLimiter {
 export class MangabakaClient {
   private readonly logger = new Logger(MangabakaClient.name);
   private readonly rateLimiter = new RateLimiter();
-  private readonly collectionsCache = new Map<number, { collections: MangabakaCollection[]; expiresAt: number }>();
+  private readonly collectionsCache = new LruMap<{ collections: MangabakaCollection[]; expiresAt: number }>(COLLECTIONS_CACHE_MAX_SIZE);
 
   async match(query: string, limit: number, signal?: AbortSignal): Promise<MangabakaSeries[]> {
     const params = new URLSearchParams({
@@ -87,7 +125,19 @@ export class MangabakaClient {
     const pagination = firstEnvelope.pagination;
     if (pagination && pagination.count > limit) {
       const totalPages = Math.ceil(pagination.count / limit);
-      for (let page = 2; page <= totalPages; page++) {
+      const cappedTotalPages = Math.min(totalPages, 50);
+      if (totalPages > 50) {
+        this.logger.warn(
+          `[MangaBaka.fetchWorks] [end] collectionId="${sanitizeLogValue(collectionId)}" totalPages=${totalPages} capped=true - capped pagination`,
+        );
+      }
+      for (let page = 2; page <= cappedTotalPages; page++) {
+        if (signal?.aborted) {
+          this.logger.log(
+            `[MangaBaka.fetchWorks] [end] collectionId="${sanitizeLogValue(collectionId)}" page=${page} aborted=true worksSoFar=${allWorks.length} - fetch works aborted mid-pagination`,
+          );
+          return allWorks;
+        }
         const envelope = await this.get<MangabakaEnvelope<MangabakaWork[]> & { pagination: MangabakaPagination }>(
           'fetchWorks',
           `/v1/collections/${collectionId}/works?limit=${limit}&page=${page}`,

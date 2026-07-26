@@ -57,11 +57,11 @@ export class MetadataFetchService {
     return mangabaka.fetchSeriesCollections(seriesId);
   }
 
-  async getMangabakaWorks(collectionId: string, seriesId: number): Promise<MetadataCandidate[]> {
+  async getMangabakaWorks(collectionId: string, seriesId: number, preferredLanguage?: string): Promise<MetadataCandidate[]> {
     const provider = this.registry.find(MetadataProviderKey.MANGABAKA);
     if (!provider) return [];
     const mangabaka = provider as MangabakaProvider;
-    return mangabaka.fetchCollectionWorks(collectionId, seriesId);
+    return mangabaka.fetchCollectionWorks(collectionId, seriesId, preferredLanguage);
   }
 
   async getStoredProviderIds(bookId: number, user: RequestUser): Promise<Partial<Record<MetadataProviderKey, string>>> {

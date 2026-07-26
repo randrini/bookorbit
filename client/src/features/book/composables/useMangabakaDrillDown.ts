@@ -2,15 +2,20 @@ import { ref } from 'vue'
 import { api } from '@/lib/api'
 import type { MangabakaCollectionSummary, MetadataCandidate } from '@bookorbit/types'
 
-export function useMangabakaDrillDown() {
-  const expandedSeries = ref<Set<string>>(new Set())
-  const collectionsBySeries = ref<Map<string, MangabakaCollectionSummary[]>>(new Map())
-  const expandedCollections = ref<Set<string>>(new Set())
-  const worksByCollection = ref<Map<string, MetadataCandidate[]>>(new Map())
-  const loadingSeries = ref<Set<string>>(new Set())
-  const loadingCollections = ref<Set<string>>(new Set())
-  const highlightedVolume = ref<number | null>(null)
+const expandedSeries = ref<Set<string>>(new Set())
+const collectionsBySeries = ref<Map<string, MangabakaCollectionSummary[]>>(new Map())
+const expandedCollections = ref<Set<string>>(new Set())
+const worksByCollection = ref<Map<string, MetadataCandidate[]>>(new Map())
+const loadingSeries = ref<Set<string>>(new Set())
+const loadingCollections = ref<Set<string>>(new Set())
+const seriesErrors = ref<Map<string, string>>(new Map())
+const collectionErrors = ref<Map<string, string>>(new Map())
+const highlightedVolume = ref<number | null>(null)
 
+const seriesInflight = new Map<string, Promise<void>>()
+const collectionInflight = new Map<string, Promise<void>>()
+
+export function useMangabakaDrillDown() {
   function seriesKey(providerId: string): string {
     return providerId
   }
@@ -35,6 +40,127 @@ export function useMangabakaDrillDown() {
     return loadingCollections.value.has(collectionKey(providerId, collectionId))
   }
 
+  function clearSeriesError(providerId: string): void {
+    const key = seriesKey(providerId)
+    if (!seriesErrors.value.has(key)) return
+    const next = new Map(seriesErrors.value)
+    next.delete(key)
+    seriesErrors.value = next
+  }
+
+  function setSeriesError(providerId: string, message: string): void {
+    const next = new Map(seriesErrors.value)
+    next.set(seriesKey(providerId), message)
+    seriesErrors.value = next
+  }
+
+  function clearCollectionError(collectionId: string): void {
+    if (!collectionErrors.value.has(collectionId)) return
+    const next = new Map(collectionErrors.value)
+    next.delete(collectionId)
+    collectionErrors.value = next
+  }
+
+  function setCollectionError(collectionId: string, message: string): void {
+    const next = new Map(collectionErrors.value)
+    next.set(collectionId, message)
+    collectionErrors.value = next
+  }
+
+  function markSeriesLoading(providerId: string, loading: boolean): void {
+    const key = seriesKey(providerId)
+    const next = new Set(loadingSeries.value)
+    if (loading) next.add(key)
+    else next.delete(key)
+    loadingSeries.value = next
+  }
+
+  function markCollectionLoading(providerId: string, collectionId: string, loading: boolean): void {
+    const key = collectionKey(providerId, collectionId)
+    const next = new Set(loadingCollections.value)
+    if (loading) next.add(key)
+    else next.delete(key)
+    loadingCollections.value = next
+  }
+
+  function setCollections(providerId: string, collections: MangabakaCollectionSummary[]): void {
+    const next = new Map(collectionsBySeries.value)
+    next.set(providerId, collections)
+    collectionsBySeries.value = next
+  }
+
+  function setWorks(collectionId: string, works: MetadataCandidate[]): void {
+    const next = new Map(worksByCollection.value)
+    next.set(collectionId, works)
+    worksByCollection.value = next
+  }
+
+  async function fetchSeriesCollections(providerId: string, seriesId: number): Promise<void> {
+    const key = seriesKey(providerId)
+
+    const existing = seriesInflight.get(key)
+    if (existing) return existing
+
+    const promise = (async () => {
+      clearSeriesError(providerId)
+      markSeriesLoading(providerId, true)
+      try {
+        const res = await api(`/api/v1/metadata-fetch/mangabaka/series/${seriesId}/collections`)
+        if (!res.ok) {
+          const message = await extractErrorMessage(res, 'Failed to load series collections')
+          setSeriesError(providerId, message)
+          return
+        }
+
+        const collections = (await res.json()) as MangabakaCollectionSummary[]
+        setCollections(providerId, collections)
+
+        const nextExpanded = new Set(expandedSeries.value)
+        nextExpanded.add(key)
+        expandedSeries.value = nextExpanded
+      } finally {
+        markSeriesLoading(providerId, false)
+        seriesInflight.delete(key)
+      }
+    })()
+
+    seriesInflight.set(key, promise)
+    return promise
+  }
+
+  async function fetchCollectionWorks(providerId: string, collectionId: string, seriesId: number): Promise<void> {
+    const key = collectionKey(providerId, collectionId)
+
+    const existing = collectionInflight.get(key)
+    if (existing) return existing
+
+    const promise = (async () => {
+      clearCollectionError(collectionId)
+      markCollectionLoading(providerId, collectionId, true)
+      try {
+        const res = await api(`/api/v1/metadata-fetch/mangabaka/collections/${collectionId}/works?seriesId=${seriesId}`)
+        if (!res.ok) {
+          const message = await extractErrorMessage(res, 'Failed to load collection works')
+          setCollectionError(collectionId, message)
+          return
+        }
+
+        const works = (await res.json()) as MetadataCandidate[]
+        setWorks(collectionId, works)
+
+        const nextExpanded = new Set(expandedCollections.value)
+        nextExpanded.add(key)
+        expandedCollections.value = nextExpanded
+      } finally {
+        markCollectionLoading(providerId, collectionId, false)
+        collectionInflight.delete(key)
+      }
+    })()
+
+    collectionInflight.set(key, promise)
+    return promise
+  }
+
   async function expandSeries(providerId: string, seriesId: number): Promise<void> {
     if (isSeriesExpanded(providerId)) {
       collapseSeries(providerId)
@@ -48,24 +174,7 @@ export function useMangabakaDrillDown() {
       return
     }
 
-    loadingSeries.value = new Set([...loadingSeries.value, seriesKey(providerId)])
-    try {
-      const res = await api(`/api/v1/metadata-fetch/mangabaka/series/${seriesId}/collections`)
-      if (!res.ok) return
-
-      const collections = (await res.json()) as MangabakaCollectionSummary[]
-      const nextCollections = new Map(collectionsBySeries.value)
-      nextCollections.set(providerId, collections)
-      collectionsBySeries.value = nextCollections
-
-      const nextExpanded = new Set(expandedSeries.value)
-      nextExpanded.add(seriesKey(providerId))
-      expandedSeries.value = nextExpanded
-    } finally {
-      const nextLoading = new Set(loadingSeries.value)
-      nextLoading.delete(seriesKey(providerId))
-      loadingSeries.value = nextLoading
-    }
+    return fetchSeriesCollections(providerId, seriesId)
   }
 
   function collapseSeries(providerId: string): void {
@@ -88,25 +197,7 @@ export function useMangabakaDrillDown() {
       return
     }
 
-    const key = collectionKey(providerId, collectionId)
-    loadingCollections.value = new Set([...loadingCollections.value, key])
-    try {
-      const res = await api(`/api/v1/metadata-fetch/mangabaka/collections/${collectionId}/works?seriesId=${seriesId}`)
-      if (!res.ok) return
-
-      const works = (await res.json()) as MetadataCandidate[]
-      const nextWorks = new Map(worksByCollection.value)
-      nextWorks.set(collectionId, works)
-      worksByCollection.value = nextWorks
-
-      const nextExpanded = new Set(expandedCollections.value)
-      nextExpanded.add(key)
-      expandedCollections.value = nextExpanded
-    } finally {
-      const nextLoading = new Set(loadingCollections.value)
-      nextLoading.delete(key)
-      loadingCollections.value = nextLoading
-    }
+    return fetchCollectionWorks(providerId, collectionId, seriesId)
   }
 
   function collapseCollection(providerId: string, collectionId: string): void {
@@ -116,6 +207,16 @@ export function useMangabakaDrillDown() {
     expandedCollections.value = nextExpanded
   }
 
+  async function retrySeries(providerId: string, seriesId: number): Promise<void> {
+    collapseSeries(providerId)
+    return expandSeries(providerId, seriesId)
+  }
+
+  async function retryCollection(providerId: string, collectionId: string, seriesId: number): Promise<void> {
+    collapseCollection(providerId, collectionId)
+    return expandCollection(providerId, collectionId, seriesId)
+  }
+
   return {
     expandedSeries,
     collectionsBySeries,
@@ -123,11 +224,15 @@ export function useMangabakaDrillDown() {
     worksByCollection,
     loadingSeries,
     loadingCollections,
+    seriesErrors,
+    collectionErrors,
     highlightedVolume,
     expandSeries,
     collapseSeries,
     expandCollection,
     collapseCollection,
+    retrySeries,
+    retryCollection,
     isSeriesExpanded,
     isCollectionExpanded,
     isLoadingSeries,
@@ -136,3 +241,12 @@ export function useMangabakaDrillDown() {
 }
 
 export type MangabakaDrillDown = ReturnType<typeof useMangabakaDrillDown>
+
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: string; error?: string }
+    return body.message ?? body.error ?? fallback
+  } catch {
+    return fallback
+  }
+}

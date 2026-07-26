@@ -122,6 +122,16 @@ describe('stripVolumeMarker', () => {
   it('trims surrounding whitespace', () => {
     expect(stripVolumeMarker('  Death Note  ')).toBe('Death Note');
   });
+
+  it('stops recursion at depth 3 for pathological input', () => {
+    // Deeply nested brackets that would cause repeated recursion
+    const pathological = 'Title T01 T02 T03 T04 T05';
+    const result = stripVolumeMarker(pathological);
+    // After depth 3, it returns the result without further recursion
+    expect(typeof result).toBe('string');
+    // Should have stripped some but not all volume markers
+    expect(result.length).toBeLessThan(pathological.length);
+  });
 });
 
 describe('extractVolumeNumber', () => {

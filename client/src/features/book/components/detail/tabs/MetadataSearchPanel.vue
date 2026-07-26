@@ -284,7 +284,9 @@ function sameProviderSelection(keys: MetadataProviderKey[]) {
 
       <!-- MangaBaka volume browser -->
       <div v-if="topMangabakaSeries.length" class="border-t border-border mt-4 pt-4">
-        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">MangaBaka Volumes</p>
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          {{ t('book.detail.editMetadata.mangabakaDrillDown.sectionTitle') }}
+        </p>
         <div class="space-y-2">
           <MangabakaSeriesDrillDown
             v-for="candidate in topMangabakaSeries"

@@ -141,7 +141,13 @@ function extractVolumeFromBrackets(title: string): number | undefined {
   return undefined;
 }
 
-export function stripVolumeMarker(title: string): string {
+const MAX_STRIP_DEPTH = 3;
+
+export function stripVolumeMarker(title: string, depth: number = 0): string {
+  if (depth >= MAX_STRIP_DEPTH) {
+    return title;
+  }
+
   const noExt = stripFileExtension(title);
   // Strip parens containing volume markers before general bracket stripping
   // (e.g. "(v01)" in "Gokukoku no Brynhildr - c001-008 (v01)")
@@ -155,7 +161,7 @@ export function stripVolumeMarker(title: string): string {
   if (stripped !== cleanUnderscores) {
     // Recurse to handle remaining mid-string markers (e.g. "Mujaki no Rakuen Vol12 ch76"
     // strips ch76 first, then needs to strip Vol12)
-    return stripVolumeMarker(stripped);
+    return stripVolumeMarker(stripped, depth + 1);
   }
 
   // Pass 2: Mid-string volume marker: truncate everything from the marker onward

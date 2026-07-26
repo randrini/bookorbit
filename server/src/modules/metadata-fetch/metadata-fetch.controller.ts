@@ -109,8 +109,9 @@ export class MetadataFetchController {
   async getMangabakaWorks(
     @Param('collectionId') collectionId: string,
     @Query('seriesId', ParseIntPipe) seriesId: number,
+    @Query('preferredLanguage') preferredLanguage?: string,
   ): Promise<MetadataCandidate[]> {
-    return this.metadataFetchService.getMangabakaWorks(collectionId, seriesId);
+    return this.metadataFetchService.getMangabakaWorks(collectionId, seriesId, preferredLanguage);
   }
 
   @Get('lookup')

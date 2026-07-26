@@ -18,6 +18,9 @@ export interface MetadataSearchParams {
   // Whether the original query contains a chapter marker (e.g. "Ch 14", "c090").
   // Passed to MangaBaka so it can include chapter in the title only when relevant.
   includeChapter?: boolean;
+  // Preferred language for collection selection (e.g. "fr", "en").
+  // When set, pickBestCollection will prefer collections in this language.
+  preferredLanguage?: string;
   // Internal-only signal used by orchestration timeout/cancellation.
   signal?: AbortSignal;
 }
