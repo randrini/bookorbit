@@ -162,12 +162,15 @@ watch(
                 >
                   {{ collection.language }}
                 </span>
-                 <span v-if="collection.publisher" class="text-[10px] text-muted-foreground">
-                   {{ collection.publisher }}
-                 </span>
-                 <span v-if="collection.medium" class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase">
-                   {{ collection.medium }}
-                 </span>
+                <span v-if="collection.publisher" class="text-[10px] text-muted-foreground">
+                  {{ collection.publisher }}
+                </span>
+                <span
+                  v-if="collection.medium"
+                  class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase"
+                >
+                  {{ collection.medium }}
+                </span>
                 <span class="text-[10px] text-muted-foreground tabular-nums">
                   {{ t('book.detail.editMetadata.mangabakaDrillDown.totalVolumeLabel', { n: collectionTotalCount(collection) }) }}
                 </span>
