@@ -16,41 +16,32 @@ const seriesInflight = new Map<string, Promise<void>>()
 const collectionInflight = new Map<string, Promise<void>>()
 
 export function useMangabakaDrillDown() {
-  function seriesKey(providerId: string): string {
-    return providerId
-  }
-
-  function collectionKey(providerId: string, collectionId: string): string {
-    return `${providerId}:${collectionId}`
-  }
-
   function isSeriesExpanded(providerId: string): boolean {
-    return expandedSeries.value.has(seriesKey(providerId))
+    return expandedSeries.value.has(providerId)
   }
 
   function isCollectionExpanded(providerId: string, collectionId: string): boolean {
-    return expandedCollections.value.has(collectionKey(providerId, collectionId))
+    return expandedCollections.value.has(`${providerId}:${collectionId}`)
   }
 
   function isLoadingSeries(providerId: string): boolean {
-    return loadingSeries.value.has(seriesKey(providerId))
+    return loadingSeries.value.has(providerId)
   }
 
   function isLoadingCollection(providerId: string, collectionId: string): boolean {
-    return loadingCollections.value.has(collectionKey(providerId, collectionId))
+    return loadingCollections.value.has(`${providerId}:${collectionId}`)
   }
 
   function clearSeriesError(providerId: string): void {
-    const key = seriesKey(providerId)
-    if (!seriesErrors.value.has(key)) return
+    if (!seriesErrors.value.has(providerId)) return
     const next = new Map(seriesErrors.value)
-    next.delete(key)
+    next.delete(providerId)
     seriesErrors.value = next
   }
 
   function setSeriesError(providerId: string, message: string): void {
     const next = new Map(seriesErrors.value)
-    next.set(seriesKey(providerId), message)
+    next.set(providerId, message)
     seriesErrors.value = next
   }
 
@@ -68,15 +59,14 @@ export function useMangabakaDrillDown() {
   }
 
   function markSeriesLoading(providerId: string, loading: boolean): void {
-    const key = seriesKey(providerId)
     const next = new Set(loadingSeries.value)
-    if (loading) next.add(key)
-    else next.delete(key)
+    if (loading) next.add(providerId)
+    else next.delete(providerId)
     loadingSeries.value = next
   }
 
   function markCollectionLoading(providerId: string, collectionId: string, loading: boolean): void {
-    const key = collectionKey(providerId, collectionId)
+    const key = `${providerId}:${collectionId}`
     const next = new Set(loadingCollections.value)
     if (loading) next.add(key)
     else next.delete(key)
@@ -96,9 +86,7 @@ export function useMangabakaDrillDown() {
   }
 
   async function fetchSeriesCollections(providerId: string, seriesId: number): Promise<void> {
-    const key = seriesKey(providerId)
-
-    const existing = seriesInflight.get(key)
+    const existing = seriesInflight.get(providerId)
     if (existing) return existing
 
     const promise = (async () => {
@@ -116,20 +104,20 @@ export function useMangabakaDrillDown() {
         setCollections(providerId, collections)
 
         const nextExpanded = new Set(expandedSeries.value)
-        nextExpanded.add(key)
+        nextExpanded.add(providerId)
         expandedSeries.value = nextExpanded
       } finally {
         markSeriesLoading(providerId, false)
-        seriesInflight.delete(key)
+        seriesInflight.delete(providerId)
       }
     })()
 
-    seriesInflight.set(key, promise)
+    seriesInflight.set(providerId, promise)
     return promise
   }
 
   async function fetchCollectionWorks(providerId: string, collectionId: string, seriesId: number): Promise<void> {
-    const key = collectionKey(providerId, collectionId)
+    const key = `${providerId}:${collectionId}`
 
     const existing = collectionInflight.get(key)
     if (existing) return existing
@@ -169,7 +157,7 @@ export function useMangabakaDrillDown() {
 
     if (collectionsBySeries.value.has(providerId)) {
       const nextExpanded = new Set(expandedSeries.value)
-      nextExpanded.add(seriesKey(providerId))
+      nextExpanded.add(providerId)
       expandedSeries.value = nextExpanded
       return
     }
@@ -178,9 +166,8 @@ export function useMangabakaDrillDown() {
   }
 
   function collapseSeries(providerId: string): void {
-    const key = seriesKey(providerId)
     const nextExpanded = new Set(expandedSeries.value)
-    nextExpanded.delete(key)
+    nextExpanded.delete(providerId)
     expandedSeries.value = nextExpanded
   }
 
@@ -192,7 +179,7 @@ export function useMangabakaDrillDown() {
 
     if (worksByCollection.value.has(collectionId)) {
       const nextExpanded = new Set(expandedCollections.value)
-      nextExpanded.add(collectionKey(providerId, collectionId))
+      nextExpanded.add(`${providerId}:${collectionId}`)
       expandedCollections.value = nextExpanded
       return
     }
@@ -201,7 +188,7 @@ export function useMangabakaDrillDown() {
   }
 
   function collapseCollection(providerId: string, collectionId: string): void {
-    const key = collectionKey(providerId, collectionId)
+    const key = `${providerId}:${collectionId}`
     const nextExpanded = new Set(expandedCollections.value)
     nextExpanded.delete(key)
     expandedCollections.value = nextExpanded
@@ -222,6 +209,8 @@ export function useMangabakaDrillDown() {
     expandedCollections.value = new Set()
     seriesErrors.value = new Map()
     collectionErrors.value = new Map()
+    seriesInflight.clear()
+    collectionInflight.clear()
   }
 
   return {
