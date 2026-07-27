@@ -153,19 +153,21 @@ watch(
             :aria-controls="'collection-panel-' + collection.id"
             @click="handleToggleCollection(collection)"
           >
-            <span class="min-w-0 flex-1 flex items-baseline gap-1.5 truncate">
-              <h4 class="text-sm font-medium text-foreground truncate">{{ collection.title }}</h4>
-              <span
-                class="shrink-0 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase"
-                :title="collection.languageDisplay"
-              >
-                {{ collection.language }}
-              </span>
-              <span v-if="collection.publisher" class="shrink-0 text-[10px] text-muted-foreground truncate max-w-[120px]">
-                {{ collection.publisher }}
-              </span>
-              <span class="shrink-0 text-[10px] text-muted-foreground tabular-nums">
-                {{ t('book.detail.editMetadata.mangabakaDrillDown.totalVolumeLabel', { n: collectionTotalCount(collection) }) }}
+            <span class="min-w-0 flex-1 flex flex-col gap-0.5">
+              <h4 class="text-sm font-medium text-foreground">{{ collection.title }}</h4>
+              <span class="flex items-center gap-1.5 flex-wrap">
+                <span
+                  class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase"
+                  :title="collection.languageDisplay"
+                >
+                  {{ collection.language }}
+                </span>
+                <span v-if="collection.publisher" class="text-[10px] text-muted-foreground">
+                  {{ collection.publisher }}
+                </span>
+                <span class="text-[10px] text-muted-foreground tabular-nums">
+                  {{ t('book.detail.editMetadata.mangabakaDrillDown.totalVolumeLabel', { n: collectionTotalCount(collection) }) }}
+                </span>
               </span>
             </span>
             <component :is="isCollectionExpanded(collection) ? ChevronUp : ChevronDown" class="size-4 text-muted-foreground shrink-0" />
