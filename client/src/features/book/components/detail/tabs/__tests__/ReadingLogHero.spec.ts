@@ -104,6 +104,7 @@ function makeBook(overrides: Partial<BookDetail> = {}): BookDetail {
     lastWrittenAt: null,
     metadataScore: null,
     hardcoverEditionId: null,
+    mangabakaSeriesId: null,
     communityRatings: [],
     readStatus: makeReadStatus(),
     audioMetadata: null,
