@@ -390,15 +390,8 @@
     {
       "idx": 55,
       "version": "7",
-      "when": 1784826014479,
-      "tag": "0055_add_mangabaka_id",
-      "breakpoints": true
-    },
-    {
-      "idx": 56,
-      "version": "7",
-      "when": 1785075105246,
-      "tag": "0056_add_mangabaka_series_id",
+      "when": 1785128574339,
+      "tag": "0055_add_audit_search_indexes",
       "breakpoints": true
     }
   ]
