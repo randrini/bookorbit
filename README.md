@@ -26,7 +26,7 @@ A self-hosted library management and reading platform for ebooks, PDFs, audioboo
 
 ---
 
-![BookOrbit dashboard showing reading stats, widgets, and book shelves](https://bookorbit.app/images/home/dashboard-overview.webp)
+![BookOrbit dashboard showing reading stats, widgets, and book shelves](docs/images/dashboard-overview.png)
 
 ## What is BookOrbit?
 
@@ -112,6 +112,8 @@ For the full installation guide including reverse proxy setup, file permissions 
 ## KOReader Plugin
 
 The BookOrbit plugin for KOReader adds progress sync, two-way annotation sync, and a native catalog browser: navigate, search, and download books from your library without leaving the device.
+
+![BookOrbit KOReader Plugin showing dashboard, catalog search, and book details](docs/images/koreader-plugin-preview.png)
 
 1. In BookOrbit, go to **Settings > Integrations > KOReader** and click **Download Plugin**.
 2. Unzip `bookorbit.koplugin.zip`.
