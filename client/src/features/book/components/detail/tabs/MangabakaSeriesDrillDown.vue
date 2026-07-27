@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ChevronDown, ChevronUp, Loader2, AlertCircle, RefreshCw } from '@lucide/vue'
+import { ChevronDown, ChevronUp, AlertCircle, RefreshCw } from '@lucide/vue'
 import type { MangabakaCollectionSummary, MetadataCandidate } from '@bookorbit/types'
 import type { MangabakaDrillDown } from '../../../composables/useMangabakaDrillDown'
 import MangabakaVolumeCard from './MangabakaVolumeCard.vue'
@@ -95,9 +95,9 @@ watch(
       :aria-controls="'series-panel-' + seriesCandidate.providerId"
       @click="handleToggleSeries"
     >
-      <span class="min-w-0 flex-1">
-        <h3 class="text-sm font-semibold text-foreground truncate block">{{ seriesCandidate.title }}</h3>
-        <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+      <span class="min-w-0 flex-1 flex items-baseline gap-2">
+        <h3 class="text-sm font-semibold text-foreground truncate">{{ seriesCandidate.title }}</h3>
+        <span class="shrink-0 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
           {{ t('book.detail.editMetadata.mangabakaDrillDown.seriesLabel') }}
         </span>
       </span>
@@ -108,9 +108,19 @@ watch(
     </button>
 
     <div v-if="isExpanded" :id="'series-panel-' + seriesCandidate.providerId" class="border-t border-border px-3 pb-3" aria-live="polite">
-      <div v-if="isLoading" aria-busy="true" class="flex items-center gap-2 py-6 text-sm text-muted-foreground justify-center">
-        <Loader2 class="size-4 animate-spin" />
-        {{ t('book.detail.editMetadata.mangabakaDrillDown.loadingCollections') }}
+      <div v-if="isLoading" aria-busy="true" class="py-3 space-y-2">
+        <div v-for="i in 2" :key="i" class="rounded-lg border border-border/40 bg-card animate-pulse px-3 py-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-baseline gap-2">
+              <div class="h-4 w-40 rounded bg-muted" />
+              <div class="h-3 w-16 rounded bg-muted" />
+            </div>
+            <div class="h-4 w-4 rounded bg-muted" />
+          </div>
+        </div>
+        <p class="text-center text-sm text-muted-foreground">
+          {{ t('book.detail.editMetadata.mangabakaDrillDown.loadingCollections') }}
+        </p>
       </div>
 
       <div v-else-if="seriesError" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3 mt-3" role="alert">
@@ -143,21 +153,19 @@ watch(
             :aria-controls="'collection-panel-' + collection.id"
             @click="handleToggleCollection(collection)"
           >
-            <span class="min-w-0 flex-1 flex flex-col gap-0.5">
+            <span class="min-w-0 flex-1 flex items-baseline gap-1.5 truncate">
               <h4 class="text-sm font-medium text-foreground truncate">{{ collection.title }}</h4>
-              <span class="flex items-center gap-1.5 flex-wrap">
-                <span
-                  class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase"
-                  :title="collection.languageDisplay"
-                >
-                  {{ collection.language }}
-                </span>
-                <span v-if="collection.publisher" class="text-[10px] text-muted-foreground truncate max-w-[120px]">
-                  {{ collection.publisher }}
-                </span>
-                <span class="text-[10px] text-muted-foreground tabular-nums">
-                  {{ t('book.detail.editMetadata.mangabakaDrillDown.volumeLabel', { n: collectionTotalCount(collection) }) }}
-                </span>
+              <span
+                class="shrink-0 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase"
+                :title="collection.languageDisplay"
+              >
+                {{ collection.language }}
+              </span>
+              <span v-if="collection.publisher" class="shrink-0 text-[10px] text-muted-foreground truncate max-w-[120px]">
+                {{ collection.publisher }}
+              </span>
+              <span class="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                {{ t('book.detail.editMetadata.mangabakaDrillDown.totalVolumeLabel', { n: collectionTotalCount(collection) }) }}
               </span>
             </span>
             <component :is="isCollectionExpanded(collection) ? ChevronUp : ChevronDown" class="size-4 text-muted-foreground shrink-0" />
@@ -169,13 +177,19 @@ watch(
             class="border-t border-border/60 bg-muted/20 px-2 py-2"
             aria-live="polite"
           >
-            <div
-              v-if="isCollectionLoading(collection)"
-              aria-busy="true"
-              class="flex items-center gap-2 py-4 text-xs text-muted-foreground justify-center"
-            >
-              <Loader2 class="size-3.5 animate-spin" />
-              {{ t('book.detail.editMetadata.mangabakaDrillDown.loadingVolumes') }}
+            <div v-if="isCollectionLoading(collection)" aria-busy="true" class="py-2">
+              <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                <div v-for="i in 6" :key="i" class="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-border/40 bg-card animate-pulse">
+                  <div class="rounded-lg bg-muted" :style="{ width: '60px', aspectRatio: '2/3' }" />
+                  <div class="w-full flex flex-col gap-0.5">
+                    <div class="h-3 w-8 rounded bg-muted" />
+                    <div class="h-2.5 w-full rounded bg-muted" />
+                  </div>
+                </div>
+              </div>
+              <p class="mt-2 text-center text-xs text-muted-foreground">
+                {{ t('book.detail.editMetadata.mangabakaDrillDown.loadingVolumes') }}
+              </p>
             </div>
 
             <div v-else-if="collectionError(collection)" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3" role="alert">

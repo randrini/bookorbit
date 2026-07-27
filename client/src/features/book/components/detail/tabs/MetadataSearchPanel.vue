@@ -87,6 +87,7 @@ function parseVolumeNumber(title: string | undefined): number | null {
 function runSearch() {
   if (!canSearch.value) return
   isFormCollapsed.value = true
+  drillDown.reset()
   emit('search', {
     title: form.title.trim(),
     author: form.author.trim(),

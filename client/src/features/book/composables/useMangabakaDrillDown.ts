@@ -217,6 +217,13 @@ export function useMangabakaDrillDown() {
     return expandCollection(providerId, collectionId, seriesId)
   }
 
+  function reset(): void {
+    expandedSeries.value = new Set()
+    expandedCollections.value = new Set()
+    seriesErrors.value = new Map()
+    collectionErrors.value = new Map()
+  }
+
   return {
     expandedSeries,
     collectionsBySeries,
@@ -237,6 +244,7 @@ export function useMangabakaDrillDown() {
     isCollectionExpanded,
     isLoadingSeries,
     isLoadingCollection,
+    reset,
   }
 }
 

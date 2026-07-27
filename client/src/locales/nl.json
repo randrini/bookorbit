@@ -3508,6 +3508,7 @@
           "noVolumes": "No volumes found.",
           "volumeLabel": "Vol. {n}",
           "volumeLabelUnknown": "Vol. ?",
+          "totalVolumeLabel": "Totaal Vol. {n}",
           "coverAlt": "Volume {index} cover for {series}",
           "volumeSelectLabel": "Select {title} ({volume})",
           "loadError": "Couldn't load data. Please try again.",
