@@ -35,7 +35,7 @@ jobs:
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Set up QEMU (for arm64 emulation)
-        uses: docker/setup-qemu-action@29109495f18e71a6050e6e5b9d3a428c93c3e8a1 # v3.6.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
       - name: Log in to GHCR
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
@@ -62,7 +62,7 @@ jobs:
       - name: Extract metadata
         id: meta
         if: steps.check-existing.outputs.skip != 'true'
-        uses: docker/metadata-action@902fa8ec7d6ecbf8c5024e7c8240847e41a03465 # v5.7.0
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
