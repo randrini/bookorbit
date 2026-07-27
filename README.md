@@ -144,6 +144,12 @@ BookOrbit is available in English, German, Dutch, Brazilian Portuguese, and Slov
 
 ---
 
+## Community Growth
+
+[![BookOrbit GitHub star history](https://raw.githubusercontent.com/bookorbit/bookorbit/star-history/star-history.svg)](https://github.com/bookorbit/bookorbit/stargazers)
+
+---
+
 ## Support
 
 - **Questions and discussion:** [GitHub Discussions](https://github.com/bookorbit/bookorbit/discussions)
