@@ -207,7 +207,7 @@ watch(
                   <p class="text-sm text-destructive">{{ collectionError(collection) }}</p>
                   <button
                     type="button"
-class="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-destructive hover:text-destructive transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                    class="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-destructive hover:text-destructive transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                     @click="handleRetryCollection(collection)"
                   >
                     <RefreshCw class="size-3.5" />
