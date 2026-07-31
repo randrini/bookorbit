@@ -33,6 +33,7 @@ export const COMMON_PROVIDER_BOOK_FILE_WRITE_FIELDS = [
 ] as const;
 
 export const COMIC_BOOK_FILE_WRITE_FIELDS = [
+  "comicvineId",
   "comicIssueNumber",
   "comicVolumeName",
   "comicPencillers",
@@ -88,6 +89,7 @@ export const BOOK_FILE_WRITE_FIELD_LABELS = {
   aladinId: "Aladin ID",
   mangabakaId: "MangaBaka ID",
   mangabakaSeriesId: "MangaBaka Series ID",
+  comicvineId: "ComicVine ID",
   comicIssueNumber: "Issue number",
   comicVolumeName: "Volume",
   comicPencillers: "Pencillers",
