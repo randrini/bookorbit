@@ -425,8 +425,15 @@
     {
       "idx": 60,
       "version": "7",
+      "when": 1785645905307,
+      "tag": "0060_add_book_move_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
       "when": 1785272590212,
-      "tag": "0060_add_mangabaka_columns",
+      "tag": "0061_add_mangabaka_columns",
       "breakpoints": true
     }
   ]

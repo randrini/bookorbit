@@ -21,6 +21,8 @@ interface TimedProviderResult {
 
 export interface StoredProviderContext {
   libraryId: number;
+  seriesName: string | null;
+  seriesIndex: number | null;
   providerIds: Partial<Record<MetadataProviderKey, string>>;
 }
 
@@ -73,6 +75,8 @@ export class MetadataFetchService {
     const row = await this.getAccessibleStoredProviderIdsRow(bookId, user);
     return {
       libraryId: row.libraryId,
+      seriesName: row.seriesName,
+      seriesIndex: row.seriesIndex,
       providerIds: this.mapStoredProviderIds(row),
     };
   }

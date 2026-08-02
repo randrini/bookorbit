@@ -614,6 +614,27 @@ export const E2E_SUITES = Object.freeze({
       ...SHARED_DB_AND_HELPER_PATHS,
     ],
   },
+  "book-move": {
+    id: "book-move",
+    name: "Book Move",
+    timeout: 120,
+    lane: "full",
+    description: "Cross-library book move suite covering preview classification, collision policies, and file relocation",
+    vitestTarget: "test/book-move.e2e-spec.ts",
+    junitOutput: `${TEST_RESULTS_DIR}/book-move-e2e-junit.xml`,
+    prepareDedicatedDatabase: true,
+    useDedicatedDatabase: true,
+    changedPaths: [
+      "server/src/modules/book-move/**",
+      "server/src/modules/scanner/**",
+      "server/src/modules/app-settings/**",
+      "server/test/book-move.e2e-spec.ts",
+      "server/test/e2e/metadata-write/**",
+      "packages/types/src/book-move.ts",
+      "packages/types/src/book-selection.ts",
+      ...SHARED_DB_AND_HELPER_PATHS,
+    ],
+  },
 });
 
 export function listE2ESuites() {
