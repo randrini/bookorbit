@@ -432,8 +432,22 @@
     {
       "idx": 61,
       "version": "7",
-      "when": 1785272590212,
-      "tag": "0061_add_mangabaka_columns",
+      "when": 1785710179664,
+      "tag": "0061_add_server_fonts",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1785747675380,
+      "tag": "0062_add_mangabaka_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1785747698701,
+      "tag": "0063_add_series_expected_book_count",
       "breakpoints": true
     }
   ]

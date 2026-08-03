@@ -1,6 +1,6 @@
 {
-  "id": "f47f20ec-2ad4-4191-b883-33b3ef8b4446",
-  "prevId": "cfc7e76d-1bc1-4ebe-8ca0-58d3fcf0ea44",
+  "id": "84eb6701-64b4-4e29-aeaa-6d5db3b67e5d",
+  "prevId": "24ac40e3-797e-413e-b066-6a55df4f733c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5793,18 +5793,6 @@
         "aladin_id": {
           "name": "aladin_id",
           "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mangabaka_id": {
-          "name": "mangabaka_id",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mangabaka_series_id": {
-          "name": "mangabaka_series_id",
-          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
         },
@@ -13088,6 +13076,154 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.server_fonts": {
+      "name": "server_fonts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "family_name": {
+          "name": "family_name",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_file_name": {
+          "name": "original_file_name",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stored_file_name": {
+          "name": "stored_file_name",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "format": {
+          "name": "format",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight": {
+          "name": "weight",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 400
+        },
+        "style": {
+          "name": "style",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'normal'"
+        },
+        "file_size": {
+          "name": "file_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_hash": {
+          "name": "file_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sf_hash_uidx": {
+          "name": "sf_hash_uidx",
+          "columns": [
+            {
+              "expression": "file_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sf_family_weight_style_uidx": {
+          "name": "sf_family_weight_style_uidx",
+          "columns": [
+            {
+              "expression": "family_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "weight",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "style",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "server_fonts_uploaded_by_users_id_fk": {
+          "name": "server_fonts_uploaded_by_users_id_fk",
+          "tableFrom": "server_fonts",
+          "tableTo": "users",
+          "columnsFrom": ["uploaded_by"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "server_fonts_format_chk": {
+          "name": "server_fonts_format_chk",
+          "value": "\"server_fonts\".\"format\" in ('ttf', 'otf', 'woff', 'woff2')"
+        },
+        "server_fonts_weight_chk": {
+          "name": "server_fonts_weight_chk",
+          "value": "\"server_fonts\".\"weight\" >= 100 and \"server_fonts\".\"weight\" <= 900 and \"server_fonts\".\"weight\" % 100 = 0"
+        },
+        "server_fonts_style_chk": {
+          "name": "server_fonts_style_chk",
+          "value": "\"server_fonts\".\"style\" in ('normal', 'italic')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.user_fonts": {
