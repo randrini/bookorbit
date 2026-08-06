@@ -21,7 +21,7 @@ function toTitleCase(str: string): string {
 // MangaBaka sometimes stores truncated/garbage sub_titles (e.g. "The ").
 // Reject values that are empty after trimming, too short to be meaningful,
 // or that end mid-word (trailing space or a lone trailing word fragment).
-function sanitizeSubtitle(subtitle: string | undefined): string | undefined {
+function sanitizeSubtitle(subtitle: string | null | undefined): string | undefined {
   if (!subtitle) return undefined;
   const trimmed = subtitle.trim();
   if (trimmed.length < 3) return undefined;
