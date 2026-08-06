@@ -18,6 +18,19 @@ function toTitleCase(str: string): string {
   });
 }
 
+// MangaBaka sometimes stores truncated/garbage sub_titles (e.g. "The ").
+// Reject values that are empty after trimming, too short to be meaningful,
+// or that end mid-word (trailing space or a lone trailing word fragment).
+function sanitizeSubtitle(subtitle: string | undefined): string | undefined {
+  if (!subtitle) return undefined;
+  const trimmed = subtitle.trim();
+  if (trimmed.length < 3) return undefined;
+  // Reject values that look truncated: end with a space or a single dangling word.
+  if (/\s$/.test(subtitle)) return undefined;
+  if (/^[a-z]+$/i.test(trimmed) && trimmed.length < 5) return undefined;
+  return trimmed;
+}
+
 function sortScore(t: { is_primary: boolean; traits: string[] }): number {
   if (t.is_primary) return 0;
   if (t.traits.includes('official')) return 1;
@@ -152,7 +165,7 @@ function resolveSourceUrl(series: MangabakaSeries): string {
 // not issues within a volume.
 function resolveComicMetadata(series: MangabakaSeries, work?: MangabakaWork): ComicMetadataFields | undefined {
   const pencillers = series.artists?.length ? series.artists : undefined;
-  const volumeName = work?.sub_title ?? undefined;
+  const volumeName = sanitizeSubtitle(work?.sub_title);
 
   const comicMetadata: ComicMetadataFields = {};
   if (pencillers) comicMetadata.pencillers = pencillers;
@@ -288,13 +301,14 @@ export function mapMangabakaWork(
   const comicMetadata = resolveComicMetadata(series, work);
   const seriesName = resolveTitle(series);
   const seriesMemberships: MetadataSeriesMembership[] | undefined = seriesName ? [{ seriesName, seriesIndex: work.sequence_numeric }] : undefined;
+  const subtitle = sanitizeSubtitle(work.sub_title);
 
   return {
     provider: MetadataProviderKey.MANGABAKA,
     providerId: work.id,
     mangabakaSeriesId: String(series.id),
-    title: formatWorkTitle(resolveTitle(series), work.sequence_numeric, chapterNumber, work.sub_title ?? undefined, options),
-    subtitle: work.sub_title ?? undefined,
+    title: formatWorkTitle(resolveTitle(series), work.sequence_numeric, chapterNumber, subtitle, options),
+    subtitle,
     authors: resolveAuthors(series),
     description: work.description?.desc?.trim() || undefined,
     publisher: bestCollection?.publisher?.name ?? resolvePublisher(series),
