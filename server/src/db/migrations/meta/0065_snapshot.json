@@ -1,6 +1,6 @@
 {
   "id": "936ac334-c538-4363-9c47-c573a368c5d1",
-  "prevId": "5b7617c7-913b-499e-901b-f46da236d8ee",
+  "prevId": "936ac334-c538-4363-9c47-c573a368c5d1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -11819,6 +11819,13 @@
         },
         "sync_bookorbit_annotations_to_kobo": {
           "name": "sync_bookorbit_annotations_to_kobo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "store_sync": {
+          "name": "store_sync",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
