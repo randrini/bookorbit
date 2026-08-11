@@ -5,6 +5,7 @@ import {
   FieldPreference,
   FieldPreferenceOverrides,
   GENRE_MERGE_MODES,
+  MAX_METADATA_GENRE_COUNT,
   MetadataFetchPreferences,
   MetadataFetchOptions,
   MetadataField,
@@ -13,7 +14,7 @@ import {
   MergeStrategy,
 } from '@bookorbit/types';
 
-import { normalizeGenreBlocklist } from '../../common/utils/genre-blocklist.utils';
+import { normalizeGenreBlocklist } from '../../common/utils/genre-fetch-options.utils';
 
 const DEFAULT_PROVIDER_ORDER: MetadataProviderKey[] = [
   MetadataProviderKey.GOODREADS,
@@ -72,6 +73,7 @@ export class MetadataPreferenceResolver {
       genres: {
         mode: 'merge',
         blocklist: [],
+        maxCount: null,
       },
       saveProviderIds: true,
       richTitleFormat: true,
@@ -148,13 +150,19 @@ export class MetadataPreferenceResolver {
       ? (genresCandidate.mode as MetadataFetchOptions['genres']['mode'])
       : fallback.genres.mode;
     const blocklist = normalizeGenreBlocklist(genresCandidate.blocklist, fallback.genres.blocklist);
+    const maxCount = this.normalizeGenreMaxCount(genresCandidate.maxCount, fallback.genres.maxCount);
     const saveProviderIds = typeof candidate.saveProviderIds === 'boolean' ? candidate.saveProviderIds : fallback.saveProviderIds;
     const richTitleFormat = typeof candidate.richTitleFormat === 'boolean' ? candidate.richTitleFormat : fallback.richTitleFormat;
 
     return {
-      genres: { mode, blocklist },
+      genres: { mode, blocklist, maxCount },
       saveProviderIds,
       richTitleFormat,
     };
+  }
+
+  private normalizeGenreMaxCount(value: unknown, fallback: number | null): number | null {
+    if (value === null) return null;
+    return Number.isInteger(value) && (value as number) >= 1 && (value as number) <= MAX_METADATA_GENRE_COUNT ? (value as number) : fallback;
   }
 }

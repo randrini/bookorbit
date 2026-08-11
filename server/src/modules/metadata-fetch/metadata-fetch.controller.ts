@@ -20,7 +20,7 @@ import { ProviderRegistry } from './provider-registry';
 import { MetadataSearchParams } from './providers/metadata-search-params';
 import { ProviderConfigService } from '../metadata-preferences/provider-config.service';
 import { MetadataPreferencesService } from '../metadata-preferences/metadata-preferences.service';
-import { createGenreBlocklistTokenSet, filterCandidateGenresAgainstBlocklist } from '../../common/utils/genre-blocklist.utils';
+import { applyGenreFetchOptionsToCandidate, createGenreBlocklistTokenSet } from '../../common/utils/genre-fetch-options.utils';
 import { ProviderThrottleTracker } from './provider-throttle.tracker';
 import { ListMetadataProvidersDto } from './dto/list-metadata-providers.dto';
 
@@ -95,11 +95,14 @@ export class MetadataFetchController {
       isAudiobook,
     };
 
-    const blockedGenreTokens = createGenreBlocklistTokenSet(preferences.options?.genres.blocklist);
+    const genreOptions = preferences.options?.genres;
+    const blockedGenreTokens = createGenreBlocklistTokenSet(genreOptions?.blocklist);
 
     return this.metadataFetchService
       .search(params, providerKeys)
-      .pipe(map((candidate: MetadataCandidate) => ({ data: filterCandidateGenresAgainstBlocklist(candidate, blockedGenreTokens) })));
+      .pipe(
+        map((candidate: MetadataCandidate) => ({ data: applyGenreFetchOptionsToCandidate(candidate, blockedGenreTokens, genreOptions?.maxCount) })),
+      );
   }
 
   @Get('mangabaka/series/:seriesId/collections')
@@ -126,8 +129,9 @@ export class MetadataFetchController {
       this.metadataPreferences.getGlobal(),
     ]);
     if (!candidate) return null;
-    const blockedGenreTokens = createGenreBlocklistTokenSet(preferences.options?.genres.blocklist);
-    return filterCandidateGenresAgainstBlocklist(candidate, blockedGenreTokens);
+    const genreOptions = preferences.options?.genres;
+    const blockedGenreTokens = createGenreBlocklistTokenSet(genreOptions?.blocklist);
+    return applyGenreFetchOptionsToCandidate(candidate, blockedGenreTokens, genreOptions?.maxCount);
   }
 
   private async resolveEnabledProviderKeys(requestedProviders?: MetadataProviderKey[]): Promise<MetadataProviderKey[]> {

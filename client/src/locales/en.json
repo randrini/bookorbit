@@ -83,7 +83,7 @@
       "language": {
         "title": "Language",
         "description": "Choose the language used across the interface.",
-        "label": "Interface language",
+        "label": "Language",
         "loadError": "Failed to load the selected language",
         "saveError": "Failed to save language preference"
       },
@@ -464,7 +464,8 @@
         "book-covers": "Book Covers",
         "icons": "Icons",
         "layout": "Layout",
-        "behavior": "Behavior"
+        "behavior": "Behavior",
+        "language": "Language"
       }
     },
     "account": {
@@ -1170,14 +1171,30 @@
         "opds": "OPDS",
         "kobo": "Kobo",
         "koreader": "KOReader",
+        "integrations": "Integrations",
         "hardcover": "Hardcover",
         "admin": "Admin",
         "system": "System",
         "account": "Account"
       }
     },
+    "integrations": {
+      "title": "Integrations",
+      "subtitle": "Connect external services to sync your reading data and highlights.",
+      "noPermission": "You do not have permission to use any integrations.",
+      "tabs": {
+        "hardcover": "Hardcover",
+        "readwise": "Readwise",
+        "storygraph": "StoryGraph"
+      },
+      "providerSubtitles": {
+        "readwise": "Send your highlights to Readwise automatically.",
+        "storygraph": "Sync your reading progress and status to The StoryGraph."
+      }
+    },
     "metadata": {
       "title": "Metadata",
+      "subtitle": "Configure metadata providers, matching rules, automation, and author enrichment.",
       "noPermission": "You do not have permission to manage metadata settings.",
       "fields": {
         "title": "Title",
@@ -1360,6 +1377,12 @@
           "combineGenres": {
             "label": "Combine genres from all selected providers",
             "hint": "Collect and deduplicate genres from every provider assigned to the Genres field, rather than stopping at the first result."
+          },
+          "maxGenres": {
+            "label": "Maximum genres per book",
+            "hint": "Applied after exclusions and duplicate removal. Leave empty for unlimited. This affects future metadata fetches.",
+            "unlimited": "Unlimited",
+            "error": "Enter a whole number from 1 to {max}, or leave the field empty."
           },
           "storeProviderIds": {
             "label": "Store provider IDs on books",
@@ -1831,6 +1854,7 @@
         "tokenPublisher": "Publisher",
         "tokenIsbn": "ISBN-13",
         "tokenLanguage": "Language",
+        "tokenLibrary": "Library name",
         "tokenOriginalFilename": "Original filename (without extension)",
         "tokenExtension": "File extension (without dot)",
         "patternHelpIntro": "Patterns use tokens like {titleToken} and {authorsToken}, plus modifiers and optional segments.",
@@ -1875,6 +1899,8 @@
         "twoWaySyncHint": "Sync reading position between BookOrbit and Kobo. Requires KEPUB delivery for precise locations and reliable page restore.",
         "syncHighlights": "Sync BookOrbit highlights to Kobo",
         "syncHighlightsHint": "Send highlights made in BookOrbit or KOReader to your Kobo. Kobo highlights are imported into BookOrbit even when this is off. Linked annotations sync edits and deletes both ways. Requires KEPUB delivery; the book on Kobo must be the KEPUB downloaded from BookOrbit.",
+        "storeSync": "Include Kobo store titles",
+        "storeSyncHint": "Also deliver books from your Kobo account, including Kobo Plus and purchases, alongside your BookOrbit library. Without this, only BookOrbit books reach the device. Store titles are downloaded from Kobo directly and are not added to your BookOrbit library.",
         "convertKepub": "Convert to KEPUB",
         "convertKepubHint": "Send eligible EPUBs as KEPUB. This stays on when progress sync or BookOrbit-to-Kobo highlights are enabled. On the next Kobo sync, affected books are offered again as KEPUB downloads; remove any old EPUB copy if Kobo keeps opening it.",
         "forceHyphenation": "Force hyphenation",
@@ -4753,6 +4779,13 @@
       "dark": "Dark",
       "system": "System"
     },
+    "languagePicker": {
+      "searchPlaceholder": "Search languages",
+      "suggested": "Suggested",
+      "all": "All languages",
+      "results": "Results",
+      "empty": "No languages match \"{query}\""
+    },
     "userAvatar": {
       "profilePicture": "Profile picture",
       "profilePictureOf": "{name} profile picture"
@@ -4875,6 +4908,11 @@
         "wideDescription": "Show one shelf per row.",
         "twoColumns": "Two columns",
         "twoColumnsDescription": "Show two shelves per row."
+      },
+      "shelfRows": {
+        "label": "Rows of books",
+        "option": "{count, plural, one {One row of books} other {# rows of books}}",
+        "hint": "Set how many rows of books each shelf shows. Narrow screens show at most two."
       },
       "reorderHintWidget": "Drag to reorder. Toggle to show or hide a widget.",
       "reorderHintShelf": "Drag to reorder. Toggle to show or hide a shelf.",
@@ -6893,6 +6931,7 @@
       "clearAllFilters": "Clear all filters",
       "expandSeries": "Expand series",
       "collapseSeries": "Collapse series",
+      "collapseLockedWhileSelecting": "Series stay expanded while selecting",
       "expanded": "Expanded",
       "exportMetadata": "Export metadata",
       "showControlsAria": "Show library controls",
@@ -7099,7 +7138,8 @@
       "book-covers": "Book Covers",
       "icons": "Icons",
       "layout": "Display Layout",
-      "behavior": "Library Behavior"
+      "behavior": "Library Behavior",
+      "language": "Language"
     },
     "reader": {
       "general": "Reader Settings",
