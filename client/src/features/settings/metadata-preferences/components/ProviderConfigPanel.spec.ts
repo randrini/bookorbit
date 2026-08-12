@@ -28,7 +28,7 @@ function fullConfig(): ProviderConfigurations {
   return {
     ...configWithoutLibroFm(),
     librofm: { enabled: false },
-  }
+  } as ProviderConfigurations
 }
 
 describe('ProviderConfigPanel', () => {
