@@ -79,12 +79,13 @@ describe('GlobalPreferencePanel', () => {
     expect(wrapper.findAll('button.settings-btn-primary').every((button) => button.attributes('disabled') !== undefined)).toBe(true)
   })
 
-  it('exposes genre and provider ID toggles as switches', () => {
+  it('exposes genre, provider ID, and rich title format toggles as switches', () => {
     const wrapper = mountPanel()
     const switches = wrapper.findAll('[role="switch"]')
 
-    expect(switches).toHaveLength(2)
+    expect(switches).toHaveLength(3)
     expect(switches[0]!.attributes('aria-checked')).toBe('true')
     expect(switches[1]!.attributes('aria-checked')).toBe('true')
+    expect(switches[2]!.attributes('aria-checked')).toBe('true')
   })
 })
