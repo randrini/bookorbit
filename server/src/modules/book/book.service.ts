@@ -15,6 +15,7 @@ import { inArray, type SQL } from 'drizzle-orm';
 
 import { bookCoverDirPath, bookThumbnailPath, findPreferredBookCoverFileName } from '../../common/book-cover-storage';
 import { MAX_BOOK_QUERY_OFFSET_ROWS, isBookQueryOffsetWithinLimit } from '../../common/constants/pagination.constants';
+import { resolveIsAudiobook } from '../../common/utils/book-media.utils';
 import { sanitizeLogValue } from '../../common/utils/log-sanitize.utils';
 import { normalizeMetadataText, normalizeMetadataTextKey } from '../../common/utils/metadata-text-normalize.utils';
 import { normalizePublishedDate, publishedYearFromDateKey } from '../../common/utils/published-date.utils';
@@ -36,6 +37,7 @@ import {
   MetadataProviderKey,
   Permission,
   customSortFieldIds,
+  hasCollectionScopedSort,
   isAudioFormat,
   isSortField,
   jumpRailStrategyForSort,
@@ -108,6 +110,10 @@ import type { SetStatusDto } from '../user-book-status/dto/set-status.dto';
 
 type SeriesCollapseQueryOptions = {
   seriesSelectionFilter: GroupRule | undefined;
+};
+
+type BookQueryExecutionOptions = Partial<SeriesCollapseQueryOptions> & {
+  defaultCollectionId?: number;
 };
 
 const METADATA_UPDATE_FAILPOINTS = [
@@ -1073,15 +1079,15 @@ export class BookService {
     return this.customMetadataService.getActiveFieldTypes(fieldIds);
   }
 
-  async executeBooksQuery(
-    userId: number,
-    where: SQL | undefined,
-    query: BookQuery,
-    collapseOptions?: SeriesCollapseQueryOptions,
-  ): Promise<BooksPage> {
+  async executeBooksQuery(userId: number, where: SQL | undefined, query: BookQuery, options?: BookQueryExecutionOptions): Promise<BooksPage> {
     const start = Date.now();
     const { page, size } = query.pagination;
-    const seriesSelectionFilter = collapseOptions ? collapseOptions.seriesSelectionFilter : query.filter;
+    if (hasCollectionScopedSort(query.sort) && options?.defaultCollectionId === undefined) {
+      throw new BadRequestException('This sort is only available inside a collection');
+    }
+    // An absent key means "fall back to the query filter"; a present key set to undefined means the
+    // caller resolved the selection filter to nothing, which is not the same thing.
+    const seriesSelectionFilter = options && 'seriesSelectionFilter' in options ? options.seriesSelectionFilter : query.filter;
     const shouldCollapse = query.collapseSeries === true && !BookQueryBuilder.hasSeriesSelectionFilter(seriesSelectionFilter);
 
     const customFieldTypes = await this.resolveCustomSortFieldTypes(query.sort);
@@ -1095,6 +1101,7 @@ export class BookService {
           offset: page * size,
           userId,
           customFieldTypes,
+          ...(options?.defaultCollectionId !== undefined ? { defaultCollectionId: options.defaultCollectionId } : {}),
         });
       // Collapsed rows render BookTableCollapsedSeriesCell which does not display custom metadata.
       const result = {
@@ -1122,7 +1129,10 @@ export class BookService {
       return result;
     }
 
-    const orderBy = this.queryBuilder.buildOrderBy(query.sort, userId, customFieldTypes);
+    const orderBy =
+      options?.defaultCollectionId !== undefined
+        ? this.queryBuilder.buildOrderBy(query.sort, userId, customFieldTypes, { defaultCollectionId: options.defaultCollectionId })
+        : this.queryBuilder.buildOrderBy(query.sort, userId, customFieldTypes);
     const { rows, authorRows, fileRows, genreRows, tagRows, progressRows, statusRows, narratorRows, seriesMembershipRows, total } =
       await this.bookRepo.findCards({
         where,
@@ -2677,7 +2687,7 @@ export class BookService {
       const found = await this.bookRepo.findById(id);
       if (!found) throw new NotFoundException(`Book ${id} not found`);
 
-      const { book, authorRows, genreRows, communityRatingRows } = found;
+      const { book, authorRows, genreRows, communityRatingRows, fileRows } = found;
       await this.libraryService.verifyUserAccess(user.id, book.books.libraryId, this.isSuperuser(user));
       const meta = book.book_metadata;
 
@@ -2691,7 +2701,7 @@ export class BookService {
         seriesIndex: meta?.seriesIndex ?? undefined,
         existingProviderIds: providerIds,
         hardcoverEditionId: meta?.hardcoverEditionId ?? undefined,
-        isAudiobook: (meta?.durationSeconds !== null && meta?.durationSeconds !== undefined) || !!meta?.audibleId || !!meta?.librofmId,
+        isAudiobook: resolveIsAudiobook(fileRows, meta),
         maxCandidatesPerProvider: 1,
         resolveVolumes: true,
       };

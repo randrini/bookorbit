@@ -129,7 +129,7 @@ export class MetadataFetchPipeline {
     const { preferences, registeredKeys, providerConfig } = await this.resolveProviderPreferenceContext(libraryId);
     const providerSelection = this.deriveProviderSet(preferences, registeredKeys, providerConfig);
     const searchParams = providerSelection.activeProviders.some((provider) => AUDIOBOOK_PROVIDER_KEYS.has(provider))
-      ? { ...params, isAudiobook: true }
+      ? { ...params, includeAudiobookProviders: true }
       : params;
 
     // Thread rich title format preference and chapter inclusion flag for MangaBaka.

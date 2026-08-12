@@ -1,5 +1,5 @@
 {
-  "id": "936ac334-c538-4363-9c47-c573a368c5d1",
+  "id": "61ef498d-334e-409c-884d-0f1896e4abcf",
   "prevId": "936ac334-c538-4363-9c47-c573a368c5d1",
   "version": "7",
   "dialect": "postgresql",
@@ -4699,6 +4699,27 @@
           "columns": [
             {
               "expression": "book_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "collection_books_collection_position_idx": {
+          "name": "collection_books_collection_position_idx",
+          "columns": [
+            {
+              "expression": "collection_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

@@ -463,6 +463,13 @@
       "when": 1786401421899,
       "tag": "0065_add_kobo_store_sync_setting",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1786610553164,
+      "tag": "0066_add_collection_books_position",
+      "breakpoints": true
     }
   ]
 }
