@@ -467,14 +467,14 @@
     {
       "idx": 66,
       "version": "7",
-      "when": 1786610553165,
+      "when": 1786683893541,
       "tag": "0066_add_koreader_device_retirements",
       "breakpoints": true
     },
     {
       "idx": 67,
       "version": "7",
-      "when": 1786610553166,
+      "when": 1786683893542,
       "tag": "0067_add_mangabaka_columns",
       "breakpoints": true
     }
