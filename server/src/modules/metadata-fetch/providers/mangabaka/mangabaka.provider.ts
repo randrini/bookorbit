@@ -69,14 +69,7 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     // Auto-fill mode: resolve from series to the matching volume work when possible.
     if (params.resolveVolumes && volumeNumber != null && candidates.length > 0) {
-      const resolved = await this.resolveVolumeCandidate(
-        candidates[0],
-        volumeNumber,
-        chapterNumber,
-        titleOptions,
-        preferredLanguage,
-        params.signal,
-      );
+      const resolved = await this.resolveVolumeCandidate(candidates[0], volumeNumber, chapterNumber, titleOptions, preferredLanguage, params.signal);
       if (resolved) {
         this.logger.log(
           `[MangaBaka.search] [end] durationMs=${Date.now() - startedAt} candidates=${candidates.length} resolvedVolume=${volumeNumber} - search completed (volume resolved)`,
