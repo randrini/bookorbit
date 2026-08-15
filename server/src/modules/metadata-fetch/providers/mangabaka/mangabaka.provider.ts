@@ -10,7 +10,7 @@ import { PROVIDER_LIMITS } from '../provider-constants';
 import { normalizeMaxCandidates } from '../provider-utils';
 import { MangabakaClient } from './mangabaka.client';
 import { mapMangabakaSeries, mapMangabakaWork, pickBestCollection, type WorkTitleOptions } from './mangabaka.mapper';
-import { extractChapterNumber, extractVolumeNumber, stripVolumeMarker } from './mangabaka-title-utils';
+import { extractChapterNumber, extractVolumeNumber, stripVolumeMarker, detectLanguageHint } from './mangabaka-title-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
@@ -36,6 +36,7 @@ export class MangabakaProvider implements IdentifiableProvider {
     const cleanTitle = params.title ? stripVolumeMarker(params.title) : undefined;
     const volumeNumber = params.title ? extractVolumeNumber(params.title) : undefined;
     const chapterNumber = params.title ? extractChapterNumber(params.title) : undefined;
+    const preferredLanguage = params.preferredLanguage ?? (params.title ? detectLanguageHint(params.title) : undefined);
     // Search by title only - the API matches better on clean titles.
     // Author is used for candidate ranking by the pipeline, not for the search query.
     const query = cleanTitle ?? params.author ?? '';
@@ -50,7 +51,7 @@ export class MangabakaProvider implements IdentifiableProvider {
 
     const startedAt = Date.now();
     this.logger.log(
-      `[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} chapterNumber=${chapterNumber ?? 'none'} resolveVolumes=${params.resolveVolumes ?? false} - search started`,
+      `[MangaBaka.search] [start] query="${sanitizeLogValue(query)}" volumeNumber=${volumeNumber ?? 'none'} chapterNumber=${chapterNumber ?? 'none'} resolveVolumes=${params.resolveVolumes ?? false} preferredLanguage=${preferredLanguage ?? 'auto'} - search started`,
     );
 
     // Prefer the stable /v1/series/search endpoint (returns full series objects).
@@ -73,7 +74,7 @@ export class MangabakaProvider implements IdentifiableProvider {
         volumeNumber,
         chapterNumber,
         titleOptions,
-        params.preferredLanguage,
+        preferredLanguage,
         params.signal,
       );
       if (resolved) {
