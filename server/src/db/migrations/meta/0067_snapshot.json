@@ -1,6 +1,6 @@
 {
-  "id": "61ef498d-334e-409c-884d-0f1896e4abcf",
-  "prevId": "936ac334-c538-4363-9c47-c573a368c5d1",
+  "id": "19df45b2-8d4f-446a-b465-5bce11364831",
+  "prevId": "8a2f1def-1083-470b-8b03-56f422155f25",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4691,12 +4691,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "position": {
-          "name": "position",
-          "type": "bigserial",
-          "primaryKey": false,
-          "notNull": true
         }
       },
       "indexes": {
@@ -4705,27 +4699,6 @@
           "columns": [
             {
               "expression": "book_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "collection_books_collection_position_idx": {
-          "name": "collection_books_collection_position_idx",
-          "columns": [
-            {
-              "expression": "collection_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "position",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6237,6 +6210,20 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "mangabaka_id": {
+          "name": "mangabaka_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": null
+        },
+        "mangabaka_series_id": {
+          "name": "mangabaka_series_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": null
         }
       },
       "indexes": {
@@ -11846,13 +11833,6 @@
         },
         "sync_bookorbit_annotations_to_kobo": {
           "name": "sync_bookorbit_annotations_to_kobo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "store_sync": {
-          "name": "store_sync",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

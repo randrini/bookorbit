@@ -439,36 +439,43 @@
     {
       "idx": 62,
       "version": "7",
-      "when": 1785747675380,
-      "tag": "0062_add_mangabaka_columns",
+      "when": 1785747698701,
+      "tag": "0062_add_series_expected_book_count",
       "breakpoints": true
     },
     {
       "idx": 63,
       "version": "7",
-      "when": 1785747698701,
-      "tag": "0063_add_series_expected_book_count",
+      "when": 1785964221973,
+      "tag": "0063_add_dashboard_random_lookup_index",
       "breakpoints": true
     },
     {
       "idx": 64,
       "version": "7",
-      "when": 1785964221973,
-      "tag": "0064_add_dashboard_random_lookup_index",
+      "when": 1786401421899,
+      "tag": "0064_add_kobo_store_sync_setting",
       "breakpoints": true
     },
     {
       "idx": 65,
       "version": "7",
-      "when": 1786401421899,
-      "tag": "0065_add_kobo_store_sync_setting",
+      "when": 1786610553164,
+      "tag": "0065_add_collection_books_position",
       "breakpoints": true
     },
     {
       "idx": 66,
       "version": "7",
-      "when": 1786610553164,
-      "tag": "0066_add_collection_books_position",
+      "when": 1786610553165,
+      "tag": "0066_add_koreader_device_retirements",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1786610553166,
+      "tag": "0067_add_mangabaka_columns",
       "breakpoints": true
     }
   ]
