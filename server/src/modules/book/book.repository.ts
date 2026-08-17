@@ -17,6 +17,7 @@ import type { BookRecommendation } from '@bookorbit/types';
 import { isAudioFormat, isComicFormat, normalizeCoverAspectRatio } from '@bookorbit/types';
 import { buildContentFilterClauses } from '../../common/utils/content-filter-sql.utils';
 import { accentInsensitiveIlike } from '../../common/utils/accent-insensitive-search.utils';
+import { advanceIsoTimestamp } from '../../common/utils/iso-timestamp.utils';
 import { SeriesIdentityService } from '../../common/services/series-identity.service';
 import { SeriesMembershipService } from '../../common/services/series-membership.service';
 import { BookQueryBuilder } from './book-query-builder.service';
@@ -322,7 +323,7 @@ function temporalSourceParts(field: SortField, userId: number, timeZone: string,
       case 'lastReadAt':
         return {
           prefixCte: sql`rail_last_read AS MATERIALIZED (
-            SELECT rail_bf.book_id, max(rail_rp.updated_at) AS value
+            SELECT rail_bf.book_id, max(rail_rp.last_read_at) AS value
             FROM ${readingProgress} rail_rp
             INNER JOIN ${bookFiles} rail_bf ON rail_bf.id = rail_rp.book_file_id
             WHERE rail_rp.user_id = ${userId}
@@ -361,7 +362,7 @@ function temporalSourceParts(field: SortField, userId: number, timeZone: string,
     case 'lastReadAt':
       return {
         prefixCte: sql`rail_last_read AS MATERIALIZED (
-          SELECT rail_bf.book_id, max(rail_rp.updated_at) AS value
+          SELECT rail_bf.book_id, max(rail_rp.last_read_at) AS value
           FROM ${readingProgress} rail_rp
           INNER JOIN ${bookFiles} rail_bf ON rail_bf.id = rail_rp.book_file_id
           WHERE rail_rp.user_id = ${userId}
@@ -683,11 +684,11 @@ export class BookRepository {
               .select({
                 bookFileId: readingProgress.bookFileId,
                 percentage: readingProgress.percentage,
-                updatedAt: readingProgress.updatedAt,
+                lastReadAt: readingProgress.lastReadAt,
               })
               .from(readingProgress)
               .where(and(eq(readingProgress.userId, userId), inArray(readingProgress.bookFileId, primaryFileIds)))
-          : Promise.resolve([] as { bookFileId: number; percentage: number; updatedAt: Date }[]),
+          : Promise.resolve([] as { bookFileId: number; percentage: number; lastReadAt: Date }[]),
         this.db
           .select({
             bookId: audiobookProgress.bookId,
@@ -709,7 +710,7 @@ export class BookRepository {
 
       const mergedPercentage =
         fileProgress && audioProgress
-          ? fileProgress.updatedAt >= audioProgress.updatedAt
+          ? fileProgress.lastReadAt >= audioProgress.updatedAt
             ? fileProgress.percentage
             : audioProgress.percentage
           : (fileProgress?.percentage ?? audioProgress?.percentage ?? null);
@@ -2089,17 +2090,18 @@ export class BookRepository {
     const normalizedKoboLocationType = this.normalizeKoboLocationPart(koboLocationType);
     const normalizedKoboLocationValue = this.normalizeKoboLocationPart(koboLocationValue);
     const normalizedKoboContentSourceProgressPercent = this.clampNullableProgressPercentage(koboContentSourceProgressPercent);
-    // Location values are optional: without them the bookmark advances percent-wise
-    // and the precise KoboSpan Location is computed server-side at delivery time.
+    // Location values are optional: without them the bookmark advances percent-only and the
+    // precise KoboSpan Location is computed server-side at delivery time.
     const hasLocation = Boolean(normalizedKoboLocationSource && normalizedKoboLocationType === 'KoboSpan' && normalizedKoboLocationValue);
 
     const now = new Date();
-    const nowIso = now.toISOString();
 
     const [existing] = await this.db
       .select({
         entitlementId: koboReadingStates.entitlementId,
         createdAtKobo: koboReadingStates.createdAtKobo,
+        lastModifiedKobo: koboReadingStates.lastModifiedKobo,
+        priorityTimestamp: koboReadingStates.priorityTimestamp,
         currentBookmark: koboReadingStates.currentBookmark,
         statistics: koboReadingStates.statistics,
         statusInfo: koboReadingStates.statusInfo,
@@ -2109,6 +2111,14 @@ export class BookRepository {
       .limit(1);
 
     const existingBookmark = this.asJsonObj(existing?.currentBookmark);
+    const existingStatusInfo = this.asJsonObj(existing?.statusInfo);
+    const nowIso = advanceIsoTimestamp(
+      now,
+      existing?.lastModifiedKobo,
+      existing?.priorityTimestamp,
+      typeof existingBookmark?.LastModified === 'string' ? existingBookmark.LastModified : null,
+      typeof existingStatusInfo?.LastModified === 'string' ? existingStatusInfo.LastModified : null,
+    );
     if (
       hasLocation &&
       this.isKoboBookmarkCurrent(
@@ -2130,23 +2140,29 @@ export class BookRepository {
       ...(existingBookmark ?? {}),
       LastModified: nowIso,
       ProgressPercent: clampedPercentage,
-      ...(hasLocation
-        ? {
-            Location: {
-              Source: normalizedKoboLocationSource,
-              Type: normalizedKoboLocationType,
-              Value: normalizedKoboLocationValue,
-            },
-          }
-        : {}),
     };
-    if (hasLocation && normalizedKoboContentSourceProgressPercent !== null) {
-      currentBookmark.ContentSourceProgressPercent = normalizedKoboContentSourceProgressPercent;
-    } else if (hasLocation) {
+    if (hasLocation) {
+      currentBookmark.Location = {
+        Source: normalizedKoboLocationSource,
+        Type: normalizedKoboLocationType,
+        Value: normalizedKoboLocationValue,
+      };
+      if (normalizedKoboContentSourceProgressPercent !== null) {
+        currentBookmark.ContentSourceProgressPercent = normalizedKoboContentSourceProgressPercent;
+      } else {
+        delete currentBookmark.ContentSourceProgressPercent;
+      }
+    } else {
+      // The hub position moved and no KoboSpan describes it. Keeping the previous Location
+      // would ship a bookmark whose position contradicts its own percent, and the device
+      // resumes from Location: it opens at the stale spot and pushes that percent back,
+      // undoing the hub progress. Percent-only is the honest degradation; the reading-state
+      // pull path fills the Location back in whenever it can convert the cfi.
+      delete currentBookmark.Location;
       delete currentBookmark.ContentSourceProgressPercent;
     }
     const statusInfo = {
-      ...(this.asJsonObj(existing?.statusInfo) ?? {}),
+      ...(existingStatusInfo ?? {}),
       LastModified: nowIso,
       Status: this.deriveKoboStatus(clampedPercentage, file.markAsFinishedPercentComplete),
     };

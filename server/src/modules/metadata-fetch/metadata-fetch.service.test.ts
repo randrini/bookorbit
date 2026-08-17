@@ -472,6 +472,8 @@ describe('MetadataFetchService', () => {
   it('returns mapped stored provider ids when the user can access the book library', async () => {
     metadataFetchRepository.findStoredProviderIdsRow.mockResolvedValue({
       libraryId: 7,
+      seriesName: null,
+      seriesIndex: null,
       googleBooksId: 'g-1',
       goodreadsId: null,
       amazonId: 'a-1',
@@ -514,6 +516,8 @@ describe('MetadataFetchService', () => {
   it('bypasses library access checks for superusers', async () => {
     metadataFetchRepository.findStoredProviderIdsRow.mockResolvedValue({
       libraryId: 9,
+      seriesName: null,
+      seriesIndex: null,
       googleBooksId: null,
       goodreadsId: null,
       amazonId: null,
@@ -559,6 +563,8 @@ describe('MetadataFetchService', () => {
   it('throws ForbiddenException when the user cannot access the target library', async () => {
     metadataFetchRepository.findStoredProviderIdsRow.mockResolvedValue({
       libraryId: 4,
+      seriesName: null,
+      seriesIndex: null,
       googleBooksId: null,
       goodreadsId: null,
       amazonId: null,

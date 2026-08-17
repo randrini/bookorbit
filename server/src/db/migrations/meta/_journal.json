@@ -474,8 +474,22 @@
     {
       "idx": 67,
       "version": "7",
-      "when": 1786683893542,
-      "tag": "0067_add_mangabaka_columns",
+      "when": 1786840894954,
+      "tag": "0067_add_reading_progress_last_read_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1786843782210,
+      "tag": "0068_normalize_entity_name_whitespace",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1786843782211,
+      "tag": "0069_add_mangabaka_columns",
       "breakpoints": true
     }
   ]
