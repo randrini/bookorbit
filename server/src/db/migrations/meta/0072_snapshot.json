@@ -1,6 +1,6 @@
 {
-  "id": "bbb24e2e-c4ed-4518-86ea-41c30a01c4a5",
-  "prevId": "9c949bea-0fce-4003-bc75-a2853bfd02bd",
+  "id": "2d7118f8-327c-4341-a07a-208140f8aff2",
+  "prevId": "ab8ef635-ee73-4686-b17e-96fefdaf0d1e",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4691,12 +4691,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "position": {
-          "name": "position",
-          "type": "bigserial",
-          "primaryKey": false,
-          "notNull": true
         }
       },
       "indexes": {
@@ -4705,27 +4699,6 @@
           "columns": [
             {
               "expression": "book_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "collection_books_collection_position_idx": {
-          "name": "collection_books_collection_position_idx",
-          "columns": [
-            {
-              "expression": "collection_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "position",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5596,60 +5569,6 @@
           "notNull": true,
           "default": false
         },
-        "birth_date": {
-          "name": "birth_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "birth_year": {
-          "name": "birth_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "death_date": {
-          "name": "death_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "death_year": {
-          "name": "death_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "website": {
-          "name": "website",
-          "type": "varchar(2048)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "genres": {
-          "name": "genres",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "influences": {
-          "name": "influences",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "metadata_provider": {
-          "name": "metadata_provider",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "metadata_provider_id": {
-          "name": "metadata_provider_id",
-          "type": "varchar(128)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "last_enriched_at": {
           "name": "last_enriched_at",
           "type": "timestamp with time zone",
@@ -6291,6 +6210,20 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "mangabaka_id": {
+          "name": "mangabaka_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": null
+        },
+        "mangabaka_series_id": {
+          "name": "mangabaka_series_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": null
         }
       },
       "indexes": {
@@ -9014,13 +8947,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "last_read_at": {
-          "name": "last_read_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {
@@ -9039,8 +8965,8 @@
           "method": "btree",
           "with": {}
         },
-        "reading_progress_user_last_read_at_idx": {
-          "name": "reading_progress_user_last_read_at_idx",
+        "reading_progress_user_updated_at_idx": {
+          "name": "reading_progress_user_updated_at_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -9049,7 +8975,7 @@
               "nulls": "last"
             },
             {
-              "expression": "last_read_at",
+              "expression": "updated_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -11907,13 +11833,6 @@
         },
         "sync_bookorbit_annotations_to_kobo": {
           "name": "sync_bookorbit_annotations_to_kobo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "store_sync": {
-          "name": "store_sync",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -15122,76 +15041,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.koreader_device_retirements": {
-      "name": "koreader_device_retirements",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "device_id": {
-          "name": "device_id",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "retired_at": {
-          "name": "retired_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "koreader_device_retirements_user_id_idx": {
-          "name": "koreader_device_retirements_user_id_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "koreader_device_retirements_user_id_users_id_fk": {
-          "name": "koreader_device_retirements_user_id_users_id_fk",
-          "tableFrom": "koreader_device_retirements",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "koreader_device_retirements_user_id_device_id_pk": {
-          "name": "koreader_device_retirements_user_id_device_id_pk",
-          "columns": [
-            "user_id",
-            "device_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.koreader_device_settings": {
       "name": "koreader_device_settings",
       "schema": "",
@@ -15603,89 +15452,6 @@
           "value": "\"koreader_page_stats\".\"start_time\" > 0"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.koreader_progress_resets": {
-      "name": "koreader_progress_resets",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "book_file_id": {
-          "name": "book_file_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reset_at": {
-          "name": "reset_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "koreader_progress_resets_book_file_id_idx": {
-          "name": "koreader_progress_resets_book_file_id_idx",
-          "columns": [
-            {
-              "expression": "book_file_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "koreader_progress_resets_user_id_users_id_fk": {
-          "name": "koreader_progress_resets_user_id_users_id_fk",
-          "tableFrom": "koreader_progress_resets",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "koreader_progress_resets_book_file_id_book_files_id_fk": {
-          "name": "koreader_progress_resets_book_file_id_book_files_id_fk",
-          "tableFrom": "koreader_progress_resets",
-          "tableTo": "book_files",
-          "columnsFrom": [
-            "book_file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "koreader_progress_resets_user_id_book_file_id_pk": {
-          "name": "koreader_progress_resets_user_id_book_file_id_pk",
-          "columns": [
-            "user_id",
-            "book_file_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.koreader_unmatched_book_devices": {

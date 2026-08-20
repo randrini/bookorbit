@@ -1,6 +1,6 @@
 {
-  "id": "bbb24e2e-c4ed-4518-86ea-41c30a01c4a5",
-  "prevId": "9c949bea-0fce-4003-bc75-a2853bfd02bd",
+  "id": "ab8ef635-ee73-4686-b17e-96fefdaf0d1e",
+  "prevId": "bbb24e2e-c4ed-4518-86ea-41c30a01c4a5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -15603,6 +15603,69 @@
           "value": "\"koreader_page_stats\".\"start_time\" > 0"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.koreader_progress_reset_devices": {
+      "name": "koreader_progress_reset_devices",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "book_file_id": {
+          "name": "book_file_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "converged_at": {
+          "name": "converged_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "koreader_progress_reset_devices_reset_fk": {
+          "name": "koreader_progress_reset_devices_reset_fk",
+          "tableFrom": "koreader_progress_reset_devices",
+          "tableTo": "koreader_progress_resets",
+          "columnsFrom": [
+            "user_id",
+            "book_file_id"
+          ],
+          "columnsTo": [
+            "user_id",
+            "book_file_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "koreader_progress_reset_devices_user_id_book_file_id_device_id_pk": {
+          "name": "koreader_progress_reset_devices_user_id_book_file_id_device_id_pk",
+          "columns": [
+            "user_id",
+            "book_file_id",
+            "device_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.koreader_progress_resets": {

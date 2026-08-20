@@ -432,14 +432,14 @@
     {
       "idx": 61,
       "version": "7",
-      "when": 1785710179664,
+      "when": 1785695009216,
       "tag": "0061_add_server_fonts",
       "breakpoints": true
     },
     {
       "idx": 62,
       "version": "7",
-      "when": 1785747698701,
+      "when": 1785712608966,
       "tag": "0062_add_series_expected_book_count",
       "breakpoints": true
     },
@@ -460,7 +460,7 @@
     {
       "idx": 65,
       "version": "7",
-      "when": 1786610553164,
+      "when": 1786466476402,
       "tag": "0065_add_collection_books_position",
       "breakpoints": true
     },
@@ -495,8 +495,22 @@
     {
       "idx": 70,
       "version": "7",
-      "when": 1787023974137,
-      "tag": "0070_add_mangabaka_columns",
+      "when": 1787083687102,
+      "tag": "0070_add_koreader_progress_resets",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1787086030151,
+      "tag": "0071_add_koreader_progress_reset_devices",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1787086030152,
+      "tag": "0072_add_mangabaka_columns",
       "breakpoints": true
     }
   ]
